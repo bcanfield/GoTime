@@ -30,40 +30,34 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type User = {
-  identity: Identity,
-  name: string | undefined,
-  online: boolean,
-  posX: number,
-  posY: number,
+
+export type MoveUser = {
+  deltaX: number,
+  deltaY: number,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace User {
+export namespace MoveUser {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("identity", AlgebraicType.createIdentityType()),
-      new ProductTypeElement("name", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
-      new ProductTypeElement("online", AlgebraicType.createBoolType()),
-      new ProductTypeElement("posX", AlgebraicType.createF32Type()),
-      new ProductTypeElement("posY", AlgebraicType.createF32Type()),
+      new ProductTypeElement("deltaX", AlgebraicType.createF32Type()),
+      new ProductTypeElement("deltaY", AlgebraicType.createF32Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: User): void {
-    User.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: MoveUser): void {
+    MoveUser.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): User {
-    return User.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): MoveUser {
+    return MoveUser.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

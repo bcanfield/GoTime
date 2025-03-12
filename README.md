@@ -50,14 +50,14 @@ npm run spacetime -- call quickstart-chat send_message 'Hello, World!'
 
 To view logs and verify that the reducer was called:
 
-````bash
-npm run spacetime -- logs quickstart-chat```
-````
+```bash
+npm run spacetime -- logs quickstart-chat
+```
 
 ## Other Commands
 
 Generate the backend types into the directory `client/src/module_bindings`:
 
 ```bash
-npm run spacetime-generate-types
+npm run generate
 ```

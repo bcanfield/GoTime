@@ -34,8 +34,10 @@ import {
 // Import and reexport all reducer arg types
 import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
-import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
-export { IdentityDisconnected };
+import { ClientDisconnected } from "./client_disconnected_reducer.ts";
+export { ClientDisconnected };
+import { MoveUser } from "./move_user_reducer.ts";
+export { MoveUser };
 import { SendMessage } from "./send_message_reducer.ts";
 export { SendMessage };
 import { SetName } from "./set_name_reducer.ts";
@@ -70,9 +72,13 @@ const REMOTE_MODULE = {
       reducerName: "client_connected",
       argsType: ClientConnected.getTypeScriptAlgebraicType(),
     },
-    identity_disconnected: {
-      reducerName: "identity_disconnected",
-      argsType: IdentityDisconnected.getTypeScriptAlgebraicType(),
+    client_disconnected: {
+      reducerName: "client_disconnected",
+      argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
+    },
+    move_user: {
+      reducerName: "move_user",
+      argsType: MoveUser.getTypeScriptAlgebraicType(),
     },
     send_message: {
       reducerName: "send_message",
@@ -110,7 +116,8 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "ClientConnected", args: ClientConnected }
-| { name: "IdentityDisconnected", args: IdentityDisconnected }
+| { name: "ClientDisconnected", args: ClientDisconnected }
+| { name: "MoveUser", args: MoveUser }
 | { name: "SendMessage", args: SendMessage }
 | { name: "SetName", args: SetName }
 ;
@@ -126,12 +133,28 @@ export class RemoteReducers {
     this.connection.offReducer("client_connected", callback);
   }
 
-  onIdentityDisconnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("identity_disconnected", callback);
+  onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("client_disconnected", callback);
   }
 
-  removeOnIdentityDisconnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("identity_disconnected", callback);
+  removeOnClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("client_disconnected", callback);
+  }
+
+  moveUser(deltaX: number, deltaY: number) {
+    const __args = { deltaX, deltaY };
+    let __writer = new BinaryWriter(1024);
+    MoveUser.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("move_user", __argsBuffer, this.setCallReducerFlags.moveUserFlags);
+  }
+
+  onMoveUser(callback: (ctx: ReducerEventContext, deltaX: number, deltaY: number) => void) {
+    this.connection.onReducer("move_user", callback);
+  }
+
+  removeOnMoveUser(callback: (ctx: ReducerEventContext, deltaX: number, deltaY: number) => void) {
+    this.connection.offReducer("move_user", callback);
   }
 
   sendMessage(text: string) {
@@ -169,6 +192,11 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  moveUserFlags: CallReducerFlags = 'FullUpdate';
+  moveUser(flags: CallReducerFlags) {
+    this.moveUserFlags = flags;
+  }
+
   sendMessageFlags: CallReducerFlags = 'FullUpdate';
   sendMessage(flags: CallReducerFlags) {
     this.sendMessageFlags = flags;

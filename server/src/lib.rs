@@ -1,4 +1,8 @@
-use spacetimedb::{table, reducer, Table, ReducerContext, Identity, Timestamp};
+use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
+
+const FIELD_WIDTH: f32 = 800.0;
+const FIELD_HEIGHT: f32 = 600.0;
+const PLAYER_RADIUS: f32 = 20.0;
 
 #[table(name = user, public)]
 pub struct User {
@@ -6,6 +10,8 @@ pub struct User {
     identity: Identity,
     name: Option<String>,
     online: bool,
+    pos_x: f32,
+    pos_y: f32,
 }
 
 #[table(name = message, public)]
@@ -15,19 +21,20 @@ pub struct Message {
     text: String,
 }
 
-
 #[reducer]
 /// Clients invoke this reducer to set their user names.
 pub fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let name = validate_name(name)?;
     if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        ctx.db.user().identity().update(User { name: Some(name), ..user });
+        ctx.db.user().identity().update(User {
+            name: Some(name),
+            ..user
+        });
         Ok(())
     } else {
         Err("Cannot set name for unknown user".to_string())
     }
 }
-
 
 /// Takes a name and checks if it's acceptable as a user's name.
 fn validate_name(name: String) -> Result<String, String> {
@@ -61,32 +68,99 @@ fn validate_message(text: String) -> Result<String, String> {
 }
 
 #[reducer(client_connected)]
-// Called when a client connects to the SpacetimeDB
 pub fn client_connected(ctx: &ReducerContext) {
     if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        // If this is a returning user, i.e. we already have a `User` with this `Identity`,
-        // set `online: true`, but leave `name` and `identity` unchanged.
-        ctx.db.user().identity().update(User { online: true, ..user });
-    } else {
-        // If this is a new user, create a `User` row for the `Identity`,
-        // which is online, but hasn't set a name.
-        ctx.db.user().insert(User {
-            name: None,
-            identity: ctx.sender,
+        // Reconnecting user: reset position and mark online.
+        ctx.db.user().identity().update(User {
             online: true,
+            pos_x: FIELD_WIDTH / 2.0,
+            pos_y: FIELD_HEIGHT / 2.0,
+            ..user
+        });
+    } else {
+        // New user: insert with default center position.
+        ctx.db.user().insert(User {
+            identity: ctx.sender,
+            name: None,
+            online: true,
+            pos_x: FIELD_WIDTH / 2.0,
+            pos_y: FIELD_HEIGHT / 2.0,
         });
     }
 }
 
-
 #[reducer(client_disconnected)]
-// Called when a client disconnects from SpacetimeDB
-pub fn identity_disconnected(ctx: &ReducerContext) {
+pub fn client_disconnected(ctx: &ReducerContext) {
     if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        ctx.db.user().identity().update(User { online: false, ..user });
+        ctx.db.user().identity().update(User {
+            online: false,
+            ..user
+        });
     } else {
-        // This branch should be unreachable,
-        // as it doesn't make sense for a client to disconnect without connecting first.
-        log::warn!("Disconnect event for unknown user with identity {:?}", ctx.sender);
+        log::warn!(
+            "Disconnect event for unknown user with identity {:?}",
+            ctx.sender
+        );
+    }
+}
+
+#[reducer]
+pub fn move_user(ctx: &ReducerContext, delta_x: f32, delta_y: f32) -> Result<(), String> {
+    if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
+        let mut new_x = user.pos_x + delta_x;
+        let mut new_y = user.pos_y + delta_y;
+
+        // Clamp to boundaries.
+        if new_x < PLAYER_RADIUS {
+            new_x = PLAYER_RADIUS;
+        }
+        if new_y < PLAYER_RADIUS {
+            new_y = PLAYER_RADIUS;
+        }
+        if new_x > FIELD_WIDTH - PLAYER_RADIUS {
+            new_x = FIELD_WIDTH - PLAYER_RADIUS;
+        }
+        if new_y > FIELD_HEIGHT - PLAYER_RADIUS {
+            new_y = FIELD_HEIGHT - PLAYER_RADIUS;
+        }
+
+        // Use iter() to loop over all users for collision detection.
+        for other in ctx.db.user().iter() {
+            if other.identity != ctx.sender {
+                let dx = new_x - other.pos_x;
+                let dy = new_y - other.pos_y;
+                let distance = (dx * dx + dy * dy).sqrt();
+                if distance < PLAYER_RADIUS * 2.0 && distance > 0.0 {
+                    // Calculate the overlap and push the current user away slightly.
+                    let overlap = PLAYER_RADIUS * 2.0 - distance;
+                    new_x += (dx / distance) * overlap * 0.5;
+                    new_y += (dy / distance) * overlap * 0.5;
+
+                    // Re-clamp in case the push moves outside boundaries.
+                    if new_x < PLAYER_RADIUS {
+                        new_x = PLAYER_RADIUS;
+                    }
+                    if new_y < PLAYER_RADIUS {
+                        new_y = PLAYER_RADIUS;
+                    }
+                    if new_x > FIELD_WIDTH - PLAYER_RADIUS {
+                        new_x = FIELD_WIDTH - PLAYER_RADIUS;
+                    }
+                    if new_y > FIELD_HEIGHT - PLAYER_RADIUS {
+                        new_y = FIELD_HEIGHT - PLAYER_RADIUS;
+                    }
+                }
+            }
+        }
+
+        // Update the user's position.
+        ctx.db.user().identity().update(User {
+            pos_x: new_x,
+            pos_y: new_y,
+            ..user
+        });
+        Ok(())
+    } else {
+        Err("User not found".to_string())
     }
 }

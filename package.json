@@ -1,0 +1,14 @@
+{
+  "name": "spacetimedb-demo",
+  "version": "0.0.0",
+  "description": "Game to demo spacetimedb",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db-up": "docker-compose up -d",
+    "spacetime": "docker exec spacetime spacetime",
+    "spacetime-generate-types": "npm run spacetime -- generate --lang typescript --out-dir client/src/module_bindings --project-path server"
+  },
+  "author": "",
+  "license": "ISC"
+}

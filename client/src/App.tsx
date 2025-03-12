@@ -8,6 +8,7 @@ import {
   User,
 } from "./module_bindings";
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
+import GameField from "./components/game-field";
 
 export type PrettyMessage = {
   senderName: string;
@@ -97,6 +98,9 @@ function App() {
           ?.subscriptionBuilder()
           .onApplied(() => {
             console.log("SDK client cache initialized.");
+          })
+          .onError((err) => {
+            console.error("Error subscribing to query:", err);
           })
           .subscribe(query);
       }
@@ -201,6 +205,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-4xl mx-auto bg-white shadow rounded p-6 space-y-6">
+        <GameField conn={conn} myIdentity={identity} />
         <div className="flex items-center gap-2">
           <a href="https://vite.dev" target="_blank">
             <img src={viteLogo} className="logo" alt="Vite logo" />

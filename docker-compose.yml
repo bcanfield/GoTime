@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  spacetime:
+    image: clockworklabs/spacetime@sha256:ed389397ae2073aade7fd75ae779bae6628db7ccd319509cd1b26cf32d87417f
+    restart: unless-stopped
+    container_name: spacetime
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    command: "start"

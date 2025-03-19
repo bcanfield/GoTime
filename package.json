@@ -6,9 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db-up": "docker-compose up -d",
+    "dev": "cd client && npm run dev",
     "spacetime": "docker exec spacetime spacetime",
     "generate": "npm run spacetime -- generate --lang typescript --out-dir client/src/module_bindings --project-path server -y",
-    "publish": "npm run spacetime -- publish  --project-path server --delete-data quickstart-chat -y"
+    "publish": "npm run spacetime -- publish  --project-path server --delete-data quickstart-chat -y",
+    "logs": "npm run spacetime -- logs quickstart-chat -f"
   },
   "author": "",
   "license": "ISC"

@@ -32,24 +32,30 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
-import { ClientConnected } from "./client_connected_reducer.ts";
-export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
-import { MoveUser } from "./move_user_reducer.ts";
-export { MoveUser };
+import { CreateGame } from "./create_game_reducer.ts";
+export { CreateGame };
+import { JoinGame } from "./join_game_reducer.ts";
+export { JoinGame };
+import { PlaceStone } from "./place_stone_reducer.ts";
+export { PlaceStone };
 import { SendMessage } from "./send_message_reducer.ts";
 export { SendMessage };
 import { SetName } from "./set_name_reducer.ts";
 export { SetName };
 
 // Import and reexport all table handle types
+import { GameTableHandle } from "./game_table.ts";
+export { GameTableHandle };
 import { MessageTableHandle } from "./message_table.ts";
 export { MessageTableHandle };
 import { UserTableHandle } from "./user_table.ts";
 export { UserTableHandle };
 
 // Import and reexport all types
+import { Game } from "./game_type.ts";
+export { Game };
 import { Message } from "./message_type.ts";
 export { Message };
 import { User } from "./user_type.ts";
@@ -57,6 +63,11 @@ export { User };
 
 const REMOTE_MODULE = {
   tables: {
+    game: {
+      tableName: "game",
+      rowType: Game.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
     message: {
       tableName: "message",
       rowType: Message.getTypeScriptAlgebraicType(),
@@ -68,17 +79,21 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    client_connected: {
-      reducerName: "client_connected",
-      argsType: ClientConnected.getTypeScriptAlgebraicType(),
-    },
     client_disconnected: {
       reducerName: "client_disconnected",
       argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
     },
-    move_user: {
-      reducerName: "move_user",
-      argsType: MoveUser.getTypeScriptAlgebraicType(),
+    create_game: {
+      reducerName: "create_game",
+      argsType: CreateGame.getTypeScriptAlgebraicType(),
+    },
+    join_game: {
+      reducerName: "join_game",
+      argsType: JoinGame.getTypeScriptAlgebraicType(),
+    },
+    place_stone: {
+      reducerName: "place_stone",
+      argsType: PlaceStone.getTypeScriptAlgebraicType(),
     },
     send_message: {
       reducerName: "send_message",
@@ -115,23 +130,16 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
-| { name: "MoveUser", args: MoveUser }
+| { name: "CreateGame", args: CreateGame }
+| { name: "JoinGame", args: JoinGame }
+| { name: "PlaceStone", args: PlaceStone }
 | { name: "SendMessage", args: SendMessage }
 | { name: "SetName", args: SetName }
 ;
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
-
-  onClientConnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("client_connected", callback);
-  }
-
-  removeOnClientConnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("client_connected", callback);
-  }
 
   onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("client_disconnected", callback);
@@ -141,20 +149,52 @@ export class RemoteReducers {
     this.connection.offReducer("client_disconnected", callback);
   }
 
-  moveUser(deltaX: number, deltaY: number) {
-    const __args = { deltaX, deltaY };
+  createGame(boardSize: number | undefined) {
+    const __args = { boardSize };
     let __writer = new BinaryWriter(1024);
-    MoveUser.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    CreateGame.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("move_user", __argsBuffer, this.setCallReducerFlags.moveUserFlags);
+    this.connection.callReducer("create_game", __argsBuffer, this.setCallReducerFlags.createGameFlags);
   }
 
-  onMoveUser(callback: (ctx: ReducerEventContext, deltaX: number, deltaY: number) => void) {
-    this.connection.onReducer("move_user", callback);
+  onCreateGame(callback: (ctx: ReducerEventContext, boardSize: number | undefined) => void) {
+    this.connection.onReducer("create_game", callback);
   }
 
-  removeOnMoveUser(callback: (ctx: ReducerEventContext, deltaX: number, deltaY: number) => void) {
-    this.connection.offReducer("move_user", callback);
+  removeOnCreateGame(callback: (ctx: ReducerEventContext, boardSize: number | undefined) => void) {
+    this.connection.offReducer("create_game", callback);
+  }
+
+  joinGame(gameId: bigint) {
+    const __args = { gameId };
+    let __writer = new BinaryWriter(1024);
+    JoinGame.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("join_game", __argsBuffer, this.setCallReducerFlags.joinGameFlags);
+  }
+
+  onJoinGame(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
+    this.connection.onReducer("join_game", callback);
+  }
+
+  removeOnJoinGame(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
+    this.connection.offReducer("join_game", callback);
+  }
+
+  placeStone(gameId: bigint, x: number, y: number) {
+    const __args = { gameId, x, y };
+    let __writer = new BinaryWriter(1024);
+    PlaceStone.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("place_stone", __argsBuffer, this.setCallReducerFlags.placeStoneFlags);
+  }
+
+  onPlaceStone(callback: (ctx: ReducerEventContext, gameId: bigint, x: number, y: number) => void) {
+    this.connection.onReducer("place_stone", callback);
+  }
+
+  removeOnPlaceStone(callback: (ctx: ReducerEventContext, gameId: bigint, x: number, y: number) => void) {
+    this.connection.offReducer("place_stone", callback);
   }
 
   sendMessage(text: string) {
@@ -192,9 +232,19 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
-  moveUserFlags: CallReducerFlags = 'FullUpdate';
-  moveUser(flags: CallReducerFlags) {
-    this.moveUserFlags = flags;
+  createGameFlags: CallReducerFlags = 'FullUpdate';
+  createGame(flags: CallReducerFlags) {
+    this.createGameFlags = flags;
+  }
+
+  joinGameFlags: CallReducerFlags = 'FullUpdate';
+  joinGame(flags: CallReducerFlags) {
+    this.joinGameFlags = flags;
+  }
+
+  placeStoneFlags: CallReducerFlags = 'FullUpdate';
+  placeStone(flags: CallReducerFlags) {
+    this.placeStoneFlags = flags;
   }
 
   sendMessageFlags: CallReducerFlags = 'FullUpdate';
@@ -211,6 +261,10 @@ export class SetReducerFlags {
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
+
+  get game(): GameTableHandle {
+    return new GameTableHandle(this.connection.clientCache.getOrCreateTable<Game>(REMOTE_MODULE.tables.game));
+  }
 
   get message(): MessageTableHandle {
     return new MessageTableHandle(this.connection.clientCache.getOrCreateTable<Message>(REMOTE_MODULE.tables.message));

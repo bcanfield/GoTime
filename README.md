@@ -32,10 +32,18 @@ npm run spacetime -- init --lang rust test-module
 
 ### Publishing a Module
 
-To create a new module using Rust:
+This pushes your module to the running spacetimedb
 
 ```bash
 npm run spacetime -- publish --project-path server quickstart-chat
+```
+
+## Generating Typescript Types
+
+Generate the backend types into the directory `client/src/module_bindings`:
+
+```bash
+npm run generate
 ```
 
 ### Calling a Reducer
@@ -52,12 +60,4 @@ To view logs and verify that the reducer was called:
 
 ```bash
 npm run spacetime -- logs quickstart-chat
-```
-
-## Other Commands
-
-Generate the backend types into the directory `client/src/module_bindings`:
-
-```bash
-npm run generate
 ```

@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import viteLogo from "/vite.svg";
+
 import {
   DbConnection,
   ErrorContext,
   EventContext,
+  Game,
   Message,
   User,
 } from "./module_bindings";
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
-import GameField from "./components/game-field";
 
 export type PrettyMessage = {
   senderName: string;
@@ -44,6 +45,31 @@ function useMessages(conn: DbConnection | null): Message[] {
   }, [conn]);
 
   return messages;
+}
+
+function useGames(conn: DbConnection | null): Game[] {
+  const [games, setGames] = useState<Game[]>([]);
+
+  useEffect(() => {
+    if (!conn) return;
+
+    const onInsert = (_ctx: EventContext, message: Game) => {
+      setGames((prev) => [...prev, message]);
+    };
+    conn.db.game.onInsert(onInsert);
+
+    const onDelete = (_ctx: EventContext, message: Game) => {
+      setGames((prev) => prev.filter((m) => m.id !== message.id));
+    };
+    conn.db.game.onDelete(onDelete);
+
+    return () => {
+      conn.db.game.removeOnInsert(onInsert);
+      conn.db.game.removeOnDelete(onDelete);
+    };
+  }, [conn]);
+
+  return games;
 }
 
 function useUsers(conn: DbConnection | null): Map<string, User> {
@@ -91,6 +117,14 @@ function App() {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [conn, setConn] = useState<DbConnection | null>(null);
 
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+
+  const handleCellClick = (x: number, y: number) => {
+    if (conn && selectedGame) {
+      conn.reducers.placeStone(selectedGame.id, x, y);
+    }
+  };
+
   useEffect(() => {
     const subscribeToQueries = (conn: DbConnection, queries: string[]) => {
       for (const query of queries) {
@@ -121,8 +155,15 @@ function App() {
       conn.reducers.onSendMessage(() => {
         console.log("Message sent.");
       });
+      conn.reducers.onCreateGame(() => {
+        console.log("Game Created.");
+      });
 
-      subscribeToQueries(conn, ["SELECT * FROM message", "SELECT * FROM user"]);
+      subscribeToQueries(conn, [
+        "SELECT * FROM message",
+        "SELECT * FROM user",
+        "SELECT * FROM game",
+      ]);
     };
 
     const onDisconnect = () => {
@@ -167,6 +208,7 @@ function App() {
 
   const messages = useMessages(conn);
   const users = useUsers(conn);
+  const games = useGames(conn);
 
   const prettyMessages: PrettyMessage[] = messages
     .sort((a, b) => (a.sent > b.sent ? 1 : -1))
@@ -202,10 +244,20 @@ function App() {
     conn.reducers.sendMessage(newMessage);
   };
 
+  // Create a new game
+  const createGame = async () => {
+    conn.reducers.createGame(9); // Create a new 9x9 game.
+  };
+
+  // Join a selected game.
+  const joinGame = async (gameId: bigint) => {
+    conn.reducers.joinGame(gameId);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
+      <h1 className="text-3xl font-bold mb-6 text-center">Online Go MVP</h1>
       <div className="max-w-4xl mx-auto bg-white shadow rounded p-6 space-y-6">
-        <GameField conn={conn} myIdentity={identity} />
         <div className="flex items-center gap-2">
           <a href="https://vite.dev" target="_blank">
             <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -292,8 +344,103 @@ function App() {
           </form>
         </div>
       </div>
+      {/* Game Section */}
+      <div className="max-w-4xl mx-auto bg-white shadow rounded p-6">
+        <h2 className="text-3xl font-bold mb-4 text-center">Available Games</h2>
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={createGame}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Create Game
+          </button>
+        </div>
+        {games.length < 1 ? (
+          <p className="text-gray-500 text-center">No available games.</p>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="border border-gray-400 p-2">Game ID</th>
+                <th className="border border-gray-400 p-2">Board Size</th>
+                <th className="border border-gray-400 p-2">Status</th>
+                <th className="border border-gray-400 p-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {games.map((game) => (
+                <tr key={game.id}>
+                  <td className="border border-gray-400 p-2">{game.id}</td>
+                  <td className="border border-gray-400 p-2">
+                    {game.boardSize}
+                  </td>
+                  <td className="border border-gray-400 p-2">
+                    {game.playerWhite ? "Full" : "Waiting"}
+                  </td>
+                  <td className="border border-gray-400 p-2">
+                    {!game.playerWhite ? (
+                      <button
+                        onClick={() => joinGame(game.id)}
+                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        Join
+                      </button>
+                    ) : (
+                      "N/A"
+                    )}
+                    <button
+                      onClick={() => setSelectedGame(game)}
+                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      {selectedGame && (
+        <Board game={selectedGame} onCellClick={handleCellClick} />
+      )}
     </div>
   );
 }
 
 export default App;
+
+type BoardProps = {
+  game: Game;
+  onCellClick: (x: number, y: number) => void;
+};
+
+function Board({ game, onCellClick }: BoardProps) {
+  const size = game.boardSize;
+  const boardStr = game.board;
+  const rows = [];
+
+  for (let y = 0; y < size; y++) {
+    const cells = [];
+    for (let x = 0; x < size; x++) {
+      const idx = y * size + x;
+      const cell = boardStr[idx];
+      cells.push(
+        <td
+          key={x}
+          onClick={() => onCellClick(x, y)}
+          className="w-10 h-10 border border-gray-400 text-center cursor-pointer hover:bg-gray-200"
+        >
+          {cell !== "0" ? cell : ""}
+        </td>
+      );
+    }
+    rows.push(<tr key={y}>{cells}</tr>);
+  }
+
+  return (
+    <table className="border-collapse mt-4">
+      <tbody>{rows}</tbody>
+    </table>
+  );
+}

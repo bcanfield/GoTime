@@ -38,6 +38,10 @@ export type Game = {
   turn: string,
   passes: number,
   boardSize: number,
+  previousBoard: string | undefined,
+  gameOver: boolean,
+  finalScoreBlack: bigint | undefined,
+  finalScoreWhite: bigint | undefined,
 };
 
 /**
@@ -57,6 +61,10 @@ export namespace Game {
       new ProductTypeElement("turn", AlgebraicType.createStringType()),
       new ProductTypeElement("passes", AlgebraicType.createU8Type()),
       new ProductTypeElement("boardSize", AlgebraicType.createU8Type()),
+      new ProductTypeElement("previousBoard", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
+      new ProductTypeElement("gameOver", AlgebraicType.createBoolType()),
+      new ProductTypeElement("finalScoreBlack", AlgebraicType.createOptionType(AlgebraicType.createU64Type())),
+      new ProductTypeElement("finalScoreWhite", AlgebraicType.createOptionType(AlgebraicType.createU64Type())),
     ]);
   }
 

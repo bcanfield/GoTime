@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import viteLogo from "/vite.svg";
-
 import {
   DbConnection,
   ErrorContext,
@@ -16,16 +15,22 @@ export type PrettyMessage = {
   text: string;
 };
 
+// Define TypeScript types matching backend SpotState.
+export type Occupant = "Empty" | "Black" | "White";
+export type SpotState = {
+  occupant: Occupant;
+  move_number: number | null;
+  marker: string | null;
+};
+
 function useMessages(conn: DbConnection | null): Message[] {
   const [messages, setMessages] = useState<Message[]>([]);
-
   useEffect(() => {
     if (!conn) return;
     const onInsert = (_ctx: EventContext, message: Message) => {
       setMessages((prev) => [...prev, message]);
     };
     conn.db.message.onInsert(onInsert);
-
     const onDelete = (_ctx: EventContext, message: Message) => {
       setMessages((prev) =>
         prev.filter(
@@ -37,22 +42,18 @@ function useMessages(conn: DbConnection | null): Message[] {
       );
     };
     conn.db.message.onDelete(onDelete);
-
     return () => {
       conn.db.message.removeOnInsert(onInsert);
       conn.db.message.removeOnDelete(onDelete);
     };
   }, [conn]);
-
   return messages;
 }
 
 function useGames(conn: DbConnection | null): Game[] {
   const [games, setGames] = useState<Game[]>([]);
-
   useEffect(() => {
     if (!conn) return;
-
     const onInsert = (_ctx: EventContext, game: Game) => {
       setGames((prev) => [...prev, game]);
     };
@@ -60,33 +61,29 @@ function useGames(conn: DbConnection | null): Game[] {
       setGames((prev) => prev.filter((g) => g.id !== game.id));
     };
     const onUpdate = (_ctx: EventContext, _oldGame: Game, newGame: Game) => {
-      console.log("GAME UPDATED", { _oldGame }, { newGame });
+      console.log("GAME UPDATED", { newGame });
       setGames((prev) => prev.map((g) => (g.id === newGame.id ? newGame : g)));
     };
-
     conn.db.game.onInsert(onInsert);
     conn.db.game.onDelete(onDelete);
     conn.db.game.onUpdate(onUpdate);
-
     return () => {
       conn.db.game.removeOnInsert(onInsert);
       conn.db.game.removeOnDelete(onDelete);
       conn.db.game.removeOnUpdate(onUpdate);
     };
   }, [conn]);
-
   return games;
 }
+
 function useUsers(conn: DbConnection | null): Map<string, User> {
   const [users, setUsers] = useState<Map<string, User>>(new Map());
-
   useEffect(() => {
     if (!conn) return;
     const onInsert = (_ctx: EventContext, user: User) => {
       setUsers((prev) => new Map(prev.set(user.identity.toHexString(), user)));
     };
     conn.db.user.onInsert(onInsert);
-
     const onUpdate = (_ctx: EventContext, oldUser: User, newUser: User) => {
       setUsers((prev) => {
         prev.delete(oldUser.identity.toHexString());
@@ -94,7 +91,6 @@ function useUsers(conn: DbConnection | null): Map<string, User> {
       });
     };
     conn.db.user.onUpdate(onUpdate);
-
     const onDelete = (_ctx: EventContext, user: User) => {
       setUsers((prev) => {
         prev.delete(user.identity.toHexString());
@@ -102,14 +98,12 @@ function useUsers(conn: DbConnection | null): Map<string, User> {
       });
     };
     conn.db.user.onDelete(onDelete);
-
     return () => {
       conn.db.user.removeOnInsert(onInsert);
       conn.db.user.removeOnUpdate(onUpdate);
       conn.db.user.removeOnDelete(onDelete);
     };
   }, [conn]);
-
   return users;
 }
 
@@ -121,12 +115,19 @@ function App() {
   const [connected, setConnected] = useState<boolean>(false);
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [conn, setConn] = useState<DbConnection | null>(null);
-
   const [selectedGameId, setSelectedGameId] = useState<bigint | null>(null);
 
-  const handleCellClick = (x: number, y: number) => {
+  const onCellClick = (x: number, y: number) => {
+    const selectedGame = games.find((g) => g.id === selectedGameId) || null;
     if (conn && selectedGame) {
       conn.reducers.placeStone(selectedGame.id, x, y);
+    }
+  };
+
+  const onPass = () => {
+    const selectedGame = games.find((g) => g.id === selectedGameId) || null;
+    if (conn && selectedGame) {
+      conn.reducers.passMove(selectedGame.id);
     }
   };
 
@@ -144,7 +145,6 @@ function App() {
           .subscribe(query);
       }
     };
-
     const onConnect = (
       conn: DbConnection,
       identity: Identity,
@@ -153,33 +153,22 @@ function App() {
       setIdentity(identity);
       setConnected(true);
       localStorage.setItem("auth_token", token);
-      console.log(
-        "Connected to SpacetimeDB with identity:",
-        identity.toHexString()
-      );
-      conn.reducers.onSendMessage(() => {
-        console.log("Message sent.");
-      });
-      conn.reducers.onCreateGame(() => {
-        console.log("Game Created.");
-      });
-
+      console.log("Connected with identity:", identity.toHexString());
+      conn.reducers.onSendMessage(() => console.log("Message sent."));
+      conn.reducers.onCreateGame(() => console.log("Game created."));
       subscribeToQueries(conn, [
         "SELECT * FROM message",
         "SELECT * FROM user",
         "SELECT * FROM game",
       ]);
     };
-
     const onDisconnect = () => {
-      console.log("Disconnected from SpacetimeDB");
+      console.log("Disconnected");
       setConnected(false);
     };
-
     const onConnectError = (_ctx: ErrorContext, err: Error) => {
-      console.log("Error connecting to SpacetimeDB:", err);
+      console.log("Connection error:", err);
     };
-
     setConn(
       DbConnection.builder()
         .withUri("ws://localhost:3000")
@@ -203,9 +192,9 @@ function App() {
     conn.db.user.onUpdate((_ctx, oldUser, newUser) => {
       const name =
         newUser.name || newUser.identity.toHexString().substring(0, 8);
-      if (oldUser.online === false && newUser.online === true) {
+      if (!oldUser.online && newUser.online) {
         setSystemMessage((prev) => prev + `\n${name} has connected.`);
-      } else if (oldUser.online === true && newUser.online === false) {
+      } else if (oldUser.online && !newUser.online) {
         setSystemMessage((prev) => prev + `\n${name} has disconnected.`);
       }
     });
@@ -214,7 +203,6 @@ function App() {
   const messages = useMessages(conn);
   const users = useUsers(conn);
   const games = useGames(conn);
-
   const selectedGame = games.find((g) => g.id === selectedGameId) || null;
 
   const prettyMessages: PrettyMessage[] = messages
@@ -235,8 +223,8 @@ function App() {
   }
 
   const name =
-    users.get(identity?.toHexString())?.name ||
-    identity?.toHexString().substring(0, 8) ||
+    users.get(identity.toHexString())?.name ||
+    identity.toHexString().substring(0, 8) ||
     "";
 
   const onSubmitNewName = (e: React.FormEvent<HTMLFormElement>) => {
@@ -251,12 +239,11 @@ function App() {
     conn.reducers.sendMessage(newMessage);
   };
 
-  // Create a new game
   const createGame = async () => {
-    conn.reducers.createGame(9); // Create a new 9x9 game.
+    // For demonstration, you can optionally pass a handicap (e.g., 2)
+    conn.reducers.createGame(9, 0); // 9x9 game without handicap.
   };
 
-  // Join a selected game.
   const joinGame = async (gameId: bigint) => {
     conn.reducers.joinGame(gameId);
   };
@@ -266,7 +253,7 @@ function App() {
       <h1 className="text-3xl font-bold mb-6 text-center">Online Go MVP</h1>
       <div className="max-w-4xl mx-auto bg-white shadow rounded p-6 space-y-6">
         <div className="flex items-center gap-2">
-          <a href="https://vite.dev" target="_blank">
+          <a href="https://vite.dev" target="_blank" rel="noreferrer">
             <img src={viteLogo} className="logo" alt="Vite logo" />
           </a>
           <h1 className="text-4xl font-bold">SpacetimeDB Chat Demo</h1>
@@ -397,7 +384,7 @@ function App() {
                     )}
                     <button
                       onClick={() => setSelectedGameId(game.id)}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 ml-2"
                     >
                       View
                     </button>
@@ -409,7 +396,7 @@ function App() {
         )}
       </div>
       {selectedGame && (
-        <Board game={selectedGame} onCellClick={handleCellClick} />
+        <Board game={selectedGame} onCellClick={onCellClick} onPass={onPass} />
       )}
     </div>
   );
@@ -420,34 +407,63 @@ export default App;
 type BoardProps = {
   game: Game;
   onCellClick: (x: number, y: number) => void;
+  onPass: () => void;
 };
 
-function Board({ game, onCellClick }: BoardProps) {
+function Board({ game, onCellClick, onPass }: BoardProps) {
   const size = game.boardSize;
-  const boardStr = game.board;
+  let board: SpotState[] = [];
+  try {
+    board = JSON.parse(game.board);
+  } catch (e) {
+    console.error("Error parsing board:", e);
+  }
   const rows = [];
-
   for (let y = 0; y < size; y++) {
     const cells = [];
     for (let x = 0; x < size; x++) {
       const idx = y * size + x;
-      const cell = boardStr[idx];
+      const cell: SpotState = board[idx];
+      let display = "";
+      if (cell.occupant === "Black") {
+        display = "●";
+      } else if (cell.occupant === "White") {
+        display = "○";
+      }
       cells.push(
         <td
           key={x}
           onClick={() => onCellClick(x, y)}
           className="w-10 h-10 border border-gray-400 text-center cursor-pointer hover:bg-gray-200"
         >
-          {cell !== "0" ? cell : ""}
+          {display}
         </td>
       );
     }
     rows.push(<tr key={y}>{cells}</tr>);
   }
-
   return (
-    <table className="border-collapse mt-4">
-      <tbody>{rows}</tbody>
-    </table>
+    <div>
+      <table className="border-collapse mt-4">
+        <tbody>{rows}</tbody>
+      </table>
+      {!game.gameOver && (
+        <button
+          onClick={onPass}
+          className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Pass
+        </button>
+      )}
+      {game.gameOver && (
+        <div className="mt-4 p-4 border rounded bg-yellow-100">
+          <h2 className="text-xl font-bold">Game Over</h2>
+          <p>
+            Final Score: Black: {game.finalScoreBlack || 0} - White:{" "}
+            {game.finalScoreWhite || 0}
+          </p>
+        </div>
+      )}
+    </div>
   );
 }

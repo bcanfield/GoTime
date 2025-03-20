@@ -31,32 +31,30 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type CreateGame = {
-  boardSize: number | undefined,
-  handicap: number | undefined,
+export type PassMove = {
+  gameId: bigint,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace CreateGame {
+export namespace PassMove {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("boardSize", AlgebraicType.createOptionType(AlgebraicType.createU8Type())),
-      new ProductTypeElement("handicap", AlgebraicType.createOptionType(AlgebraicType.createU8Type())),
+      new ProductTypeElement("gameId", AlgebraicType.createU64Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: CreateGame): void {
-    CreateGame.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: PassMove): void {
+    PassMove.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): CreateGame {
-    return CreateGame.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): PassMove {
+    return PassMove.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

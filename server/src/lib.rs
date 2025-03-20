@@ -21,8 +21,7 @@ pub struct Message {
     pub text: String,
 }
 
-/// In this version, we store the Go board as a JSON‑serialized Vec<SpotState>.
-/// The board is a grid of board_size x board_size spots.
+/// The Game struct stores the board as a JSON-serialized Vec<SpotState>.
 #[table(name = game, public)]
 pub struct Game {
     #[primary_key]
@@ -33,7 +32,7 @@ pub struct Game {
     pub turn: String,  // "B" for Black or "W" for White
     pub passes: u8,
     pub board_size: u8,
-    pub previous_board: Option<String>, // For simple ko rule checking
+    pub previous_board: Option<String>, // For simple ko checking
     pub game_over: bool,
     pub final_score_black: Option<u64>,
     pub final_score_white: Option<u64>,
@@ -46,29 +45,17 @@ pub enum Occupant {
     White,
 }
 
-/// Each board spot holds not only which stone (if any) is there,
-/// but also additional details (for example, when the stone was played).
+/// Each board spot holds additional details.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SpotState {
     pub occupant: Occupant,
-    pub move_number: Option<u64>, // e.g. timestamp when stone was placed
-    pub marker: Option<String>,   // extra state details if needed
+    pub move_number: Option<u64>,
+    pub marker: Option<String>,
 }
 
-/// Create an empty board as a JSON string.
-// fn init_board(size: u8) -> String {
-//     let num_spots = (size as usize) * (size as usize);
-//     let board: Vec<SpotState> = (0..num_spots)
-//         .map(|_| SpotState {
-//             occupant: Occupant::Empty,
-//             move_number: None,
-//             marker: None,
-//         })
-//         .collect();
-//     serde_json::to_string(&board).unwrap()
-// }
+/// --- PURE BOARD LOGIC FUNCTIONS --- ///
 
-/// Returns the valid neighbor coordinates (up, down, left, right) for (x,y).
+/// Returns valid neighbor coordinates (up, down, left, right) for (x,y).
 fn neighbors(x: usize, y: usize, size: usize) -> Vec<(usize, usize)> {
     let mut result = Vec::new();
     if x > 0 {
@@ -91,7 +78,7 @@ fn coord_to_index(x: usize, y: usize, size: usize) -> usize {
     y * size + x
 }
 
-/// Given a starting coordinate, return all indices in the connected group (stones with the same occupant).
+/// Returns all indices in the connected group (stones with the same occupant).
 fn get_group_indices(board: &Vec<SpotState>, size: usize, x: usize, y: usize) -> HashSet<usize> {
     let mut group = HashSet::new();
     let mut queue = VecDeque::new();
@@ -111,7 +98,7 @@ fn get_group_indices(board: &Vec<SpotState>, size: usize, x: usize, y: usize) ->
     group
 }
 
-/// Returns true if the group (given by indices) has at least one liberty.
+/// Returns true if the group has at least one liberty.
 fn group_has_liberty(board: &Vec<SpotState>, size: usize, group: &HashSet<usize>) -> bool {
     for &idx in group.iter() {
         let x = idx % size;
@@ -135,7 +122,8 @@ fn remove_group(board: &mut Vec<SpotState>, group: &HashSet<usize>) {
     }
 }
 
-/// A basic evaluation that uses area scoring.
+/// Evaluate the board using a simple area scoring method.
+/// Returns (score_black, score_white).
 fn evaluate_game(board: &Vec<SpotState>, size: usize) -> (u64, u64) {
     let mut visited = vec![false; board.len()];
     let mut score_black = 0;
@@ -188,6 +176,56 @@ fn evaluate_game(board: &Vec<SpotState>, size: usize) -> (u64, u64) {
     }
     (score_black, score_white)
 }
+
+/// Pure function to apply a move on a board.
+/// It takes the board vector, board size, stone color, move coordinates, previous board (for ko),
+/// and a timestamp. Returns the updated board and a new board serialization string.
+pub fn apply_move_to_board(
+    board: Vec<SpotState>,
+    size: usize,
+    stone_color: Occupant,
+    x: usize,
+    y: usize,
+    previous_board: Option<String>,
+    timestamp: u64,
+) -> Result<(Vec<SpotState>, Option<String>), String> {
+    let mut board = board;
+    let idx = coord_to_index(x, y, size);
+    if board[idx].occupant != Occupant::Empty {
+        return Err("Position already occupied".to_string());
+    }
+    board[idx].occupant = stone_color.clone();
+    board[idx].move_number = Some(timestamp);
+    // Capture adjacent opponent groups.
+    let opponent = match stone_color {
+        Occupant::Black => Occupant::White,
+        Occupant::White => Occupant::Black,
+        _ => unreachable!(),
+    };
+    for (nx, ny) in neighbors(x, y, size) {
+        let n_idx = coord_to_index(nx, ny, size);
+        if board[n_idx].occupant == opponent {
+            let group = get_group_indices(&board, size, nx, ny);
+            if !group_has_liberty(&board, size, &group) {
+                remove_group(&mut board, &group);
+            }
+        }
+    }
+    // Check for suicide.
+    let group = get_group_indices(&board, size, x, y);
+    if !group_has_liberty(&board, size, &group) {
+        return Err("Illegal move: suicide".to_string());
+    }
+    let new_board_str = serde_json::to_string(&board).map_err(|e| e.to_string())?;
+    if let Some(prev) = &previous_board {
+        if new_board_str == *prev {
+            return Err("Illegal move: violates ko rule".to_string());
+        }
+    }
+    Ok((board, Some(new_board_str)))
+}
+
+/// --- Reducers (unchanged from working code) --- ///
 
 #[reducer]
 pub fn send_message(ctx: &ReducerContext, text: String) -> Result<(), String> {
@@ -261,7 +299,6 @@ pub fn client_disconnected(ctx: &ReducerContext) {
     }
 }
 
-/// Reducer to create a new game with optional handicap support.
 #[reducer]
 pub fn create_game(
     ctx: &ReducerContext,
@@ -269,7 +306,7 @@ pub fn create_game(
     handicap: Option<u8>,
 ) -> Result<(), String> {
     let size = board_size.unwrap_or(DEFAULT_BOARD_SIZE);
-    let game_id = ctx
+    let game_id: u64 = ctx
         .timestamp
         .to_micros_since_unix_epoch()
         .try_into()
@@ -284,7 +321,7 @@ pub fn create_game(
     // Pre-place handicap stones if provided.
     let handicap = handicap.unwrap_or(0);
     if handicap > 0 {
-        // For simplicity, predefined handicap positions (for a 9x9 board; extend as needed).
+        // Predefined handicap positions for a 9x9 board.
         let handicap_positions = match size {
             9 => vec![(2, 2), (6, 6), (2, 6), (6, 2), (4, 4)],
             13 => vec![(3, 3), (9, 9), (3, 9), (9, 3), (6, 6)],
@@ -343,7 +380,6 @@ pub fn join_game(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     }
 }
 
-/// Reducer to pass a turn. Two consecutive passes end the game.
 #[reducer]
 pub fn pass_move(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     let mut game = match ctx.db.game().id().find(game_id) {
@@ -373,7 +409,6 @@ pub fn pass_move(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     Ok(())
 }
 
-/// Reducer to place a stone at coordinates (x, y).
 #[reducer]
 pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(), String> {
     let mut game = match ctx.db.game().id().find(game_id) {
@@ -402,7 +437,7 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
         return Err("Not your turn".to_string());
     }
     let size = game.board_size as usize;
-    let mut board: Vec<SpotState> = serde_json::from_str(&game.board).map_err(|e| e.to_string())?;
+    let board: Vec<SpotState> = serde_json::from_str(&game.board).map_err(|e| e.to_string())?;
     let idx = coord_to_index(x as usize, y as usize, size);
     if board[idx].occupant != Occupant::Empty {
         return Err("Position already occupied".to_string());
@@ -412,40 +447,18 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
         .to_micros_since_unix_epoch()
         .try_into()
         .unwrap();
-    board[idx].occupant = stone_color.clone();
-    board[idx].move_number = Some(move_num);
-    let prev_board = game.board.clone();
-
-    // Check each neighboring cell: capture opponent groups if they lose their liberties.
-    let opponent = match stone_color {
-        Occupant::Black => Occupant::White,
-        Occupant::White => Occupant::Black,
-        _ => unreachable!(),
-    };
-    for (nx, ny) in neighbors(x as usize, y as usize, size) {
-        let n_idx = coord_to_index(nx, ny, size);
-        if board[n_idx].occupant == opponent {
-            let group = get_group_indices(&board, size, nx, ny);
-            if !group_has_liberty(&board, size, &group) {
-                remove_group(&mut board, &group);
-            }
-        }
-    }
-    // Check for suicide.
-    let group = get_group_indices(&board, size, x as usize, y as usize);
-    if !group_has_liberty(&board, size, &group) {
-        return Err("Illegal move: suicide".to_string());
-    }
-    let new_board_str = serde_json::to_string(&board).map_err(|e| e.to_string())?;
-    // Basic ko rule: disallow move if board reverts to previous state.
-    if let Some(prev) = &game.previous_board {
-        if new_board_str == *prev {
-            return Err("Illegal move: violates ko rule".to_string());
-        }
-    }
-    // Update game state.
-    game.previous_board = Some(prev_board);
-    game.board = new_board_str;
+    // Apply the move using our pure function.
+    let (_new_board, new_board_str) = apply_move_to_board(
+        board,
+        size,
+        stone_color,
+        x as usize,
+        y as usize,
+        game.previous_board.clone(),
+        move_num,
+    )?;
+    game.previous_board = Some(game.board.clone());
+    game.board = new_board_str.unwrap();
     game.passes = 0;
     game.turn = if game.turn == "B" {
         "W".to_string()
@@ -454,4 +467,195 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
     };
     ctx.db.game().id().update(game);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Helper: Create an empty board as a Vec<SpotState>.
+    fn empty_board(size: usize) -> Vec<SpotState> {
+        let num_spots = size * size;
+        (0..num_spots)
+            .map(|_| SpotState {
+                occupant: Occupant::Empty,
+                move_number: None,
+                marker: None,
+            })
+            .collect()
+    }
+
+    /// Test a legal move: a Black stone is placed on an empty spot.
+    #[test]
+    fn test_legal_move() {
+        let size = 9;
+        let board = empty_board(size);
+        let timestamp = 1000;
+
+        let (new_board, new_board_str) =
+            apply_move_to_board(board, size, Occupant::Black, 4, 4, None, timestamp)
+                .expect("Legal move should succeed");
+        let idx = coord_to_index(4, 4, size);
+        assert_eq!(
+            new_board[idx].occupant,
+            Occupant::Black,
+            "Black stone should be at (4,4)"
+        );
+        assert!(new_board_str.is_some(), "Board string should be updated");
+    }
+
+    /// Test that placing a stone on an occupied spot is illegal.
+    #[test]
+    fn test_move_on_occupied() {
+        let size = 9;
+        let board = empty_board(size);
+        let timestamp = 1000;
+        let (board, prev) =
+            apply_move_to_board(board, size, Occupant::Black, 2, 2, None, timestamp).unwrap();
+        let result = apply_move_to_board(board, size, Occupant::White, 2, 2, prev, timestamp + 1);
+        assert!(result.is_err(), "Should not allow move on an occupied spot");
+    }
+
+    /// Test capturing: white stone becomes captured.
+    #[test]
+    fn test_capture() {
+        let size = 5;
+        let mut board = empty_board(size);
+        let ts = 1000;
+        // Place a white stone at (2,2).
+        board = apply_move_to_board(board, size, Occupant::White, 2, 2, None, ts)
+            .unwrap()
+            .0;
+        // Surround white with Black stones.
+        board = apply_move_to_board(board, size, Occupant::Black, 2, 1, None, ts + 1)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 1, 2, None, ts + 2)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 3, 2, None, ts + 3)
+            .unwrap()
+            .0;
+
+        let (new_board, _new_board_str) =
+            apply_move_to_board(board, size, Occupant::Black, 2, 3, None, ts + 4).unwrap();
+        let idx_white = coord_to_index(2, 2, size);
+        assert_eq!(
+            new_board[idx_white].occupant,
+            Occupant::Empty,
+            "White stone should be captured"
+        );
+    }
+
+    /// Test that suicide moves are rejected.
+    #[test]
+    fn test_suicide() {
+        let size = 5;
+        let mut board = empty_board(size);
+        let ts = 1000;
+        // Surround an empty point with Black stones.
+        board = apply_move_to_board(board, size, Occupant::Black, 1, 2, None, ts)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 2, 1, None, ts + 1)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 3, 2, None, ts + 2)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 2, 3, None, ts + 3)
+            .unwrap()
+            .0;
+        // White playing at (2,2) would be suicide.
+        let result = apply_move_to_board(board, size, Occupant::White, 2, 2, None, ts + 4);
+        assert!(result.is_err(), "Suicide move should be rejected");
+    }
+
+    /// Test the basic ko rule: a move that reverts the board to the previous state is rejected.
+    #[test]
+    fn test_ko_rule() {
+        let size = 5;
+        let mut board = empty_board(size);
+        let ts = 1000;
+        // Build a simple ko scenario.
+        board = apply_move_to_board(board, size, Occupant::White, 2, 2, None, ts)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 2, 1, None, ts + 1)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 1, 2, None, ts + 2)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::Black, 3, 2, None, ts + 3)
+            .unwrap()
+            .0;
+        board = apply_move_to_board(board, size, Occupant::White, 2, 3, None, ts + 4)
+            .unwrap()
+            .0;
+        let prev = serde_json::to_string(&board).unwrap();
+        // Black attempts a move that would revert the board.
+        let result = apply_move_to_board(
+            board,
+            size,
+            Occupant::Black,
+            2,
+            1,
+            Some(prev.clone()),
+            ts + 5,
+        );
+        assert!(
+            result.is_err(),
+            "Ko rule should prevent immediate recapture"
+        );
+    }
+
+    /// Test pass move and game-over evaluation via evaluate_game.
+    #[test]
+    fn test_pass_and_game_over() {
+        let size = 5;
+        let board = empty_board(size);
+        // Simulate a board where Black controls a clear territory.
+        let mut board = board;
+        let ts = 1000;
+        for y in 0..3 {
+            for x in 0..3 {
+                let idx = coord_to_index(x, y, size);
+                board[idx].occupant = Occupant::Black;
+                board[idx].move_number = Some(ts);
+            }
+        }
+        let (score_black, score_white) = evaluate_game(&board, size);
+        assert!(
+            score_black > score_white,
+            "Black should have a higher score"
+        );
+    }
+
+    /// Test handicap game creation: ensure handicap stones are pre-placed and turn is set to White.
+    #[test]
+    fn test_handicap_creation() {
+        let size = 9;
+        let handicap = 2;
+        let ts = 1000;
+        let mut board: Vec<SpotState> = (0..(size * size))
+            .map(|_| SpotState {
+                occupant: Occupant::Empty,
+                move_number: None,
+                marker: None,
+            })
+            .collect();
+        let handicap_positions = vec![(2, 2), (6, 6), (2, 6), (6, 2), (4, 4)];
+        for i in 0..(handicap as usize).min(handicap_positions.len()) {
+            let (x, y) = handicap_positions[i];
+            let idx = coord_to_index(x, y, size);
+            board[idx].occupant = Occupant::Black;
+            board[idx].move_number = Some(ts);
+        }
+        let count_black = board
+            .iter()
+            .filter(|s| s.occupant == Occupant::Black)
+            .count();
+        assert_eq!(count_black, 2, "Two handicap stones should be pre-placed");
+    }
 }

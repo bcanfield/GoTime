@@ -53,25 +53,30 @@ function useGames(conn: DbConnection | null): Game[] {
   useEffect(() => {
     if (!conn) return;
 
-    const onInsert = (_ctx: EventContext, message: Game) => {
-      setGames((prev) => [...prev, message]);
+    const onInsert = (_ctx: EventContext, game: Game) => {
+      setGames((prev) => [...prev, game]);
     };
-    conn.db.game.onInsert(onInsert);
+    const onDelete = (_ctx: EventContext, game: Game) => {
+      setGames((prev) => prev.filter((g) => g.id !== game.id));
+    };
+    const onUpdate = (_ctx: EventContext, _oldGame: Game, newGame: Game) => {
+      console.log("GAME UPDATED", { _oldGame }, { newGame });
+      setGames((prev) => prev.map((g) => (g.id === newGame.id ? newGame : g)));
+    };
 
-    const onDelete = (_ctx: EventContext, message: Game) => {
-      setGames((prev) => prev.filter((m) => m.id !== message.id));
-    };
+    conn.db.game.onInsert(onInsert);
     conn.db.game.onDelete(onDelete);
+    conn.db.game.onUpdate(onUpdate);
 
     return () => {
       conn.db.game.removeOnInsert(onInsert);
       conn.db.game.removeOnDelete(onDelete);
+      conn.db.game.removeOnUpdate(onUpdate);
     };
   }, [conn]);
 
   return games;
 }
-
 function useUsers(conn: DbConnection | null): Map<string, User> {
   const [users, setUsers] = useState<Map<string, User>>(new Map());
 
@@ -117,7 +122,7 @@ function App() {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [conn, setConn] = useState<DbConnection | null>(null);
 
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState<bigint | null>(null);
 
   const handleCellClick = (x: number, y: number) => {
     if (conn && selectedGame) {
@@ -209,6 +214,8 @@ function App() {
   const messages = useMessages(conn);
   const users = useUsers(conn);
   const games = useGames(conn);
+
+  const selectedGame = games.find((g) => g.id === selectedGameId) || null;
 
   const prettyMessages: PrettyMessage[] = messages
     .sort((a, b) => (a.sent > b.sent ? 1 : -1))
@@ -389,7 +396,7 @@ function App() {
                       "N/A"
                     )}
                     <button
-                      onClick={() => setSelectedGame(game)}
+                      onClick={() => setSelectedGameId(game.id)}
                       className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
                     >
                       View

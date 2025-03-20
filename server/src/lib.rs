@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
 use std::collections::{HashSet, VecDeque};
+use std::convert::TryInto;
 
 const DEFAULT_BOARD_SIZE: u8 = 9;
 
@@ -33,6 +34,9 @@ pub struct Game {
     pub passes: u8,
     pub board_size: u8,
     pub previous_board: Option<String>, // For simple ko rule checking
+    pub game_over: bool,
+    pub final_score_black: Option<u64>,
+    pub final_score_white: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -52,17 +56,17 @@ pub struct SpotState {
 }
 
 /// Create an empty board as a JSON string.
-fn init_board(size: u8) -> String {
-    let num_spots = (size as usize) * (size as usize);
-    let board: Vec<SpotState> = (0..num_spots)
-        .map(|_| SpotState {
-            occupant: Occupant::Empty,
-            move_number: None,
-            marker: None,
-        })
-        .collect();
-    serde_json::to_string(&board).unwrap()
-}
+// fn init_board(size: u8) -> String {
+//     let num_spots = (size as usize) * (size as usize);
+//     let board: Vec<SpotState> = (0..num_spots)
+//         .map(|_| SpotState {
+//             occupant: Occupant::Empty,
+//             move_number: None,
+//             marker: None,
+//         })
+//         .collect();
+//     serde_json::to_string(&board).unwrap()
+// }
 
 /// Returns the valid neighbor coordinates (up, down, left, right) for (x,y).
 fn neighbors(x: usize, y: usize, size: usize) -> Vec<(usize, usize)> {
@@ -129,6 +133,60 @@ fn remove_group(board: &mut Vec<SpotState>, group: &HashSet<usize>) {
         board[idx].move_number = None;
         board[idx].marker = None;
     }
+}
+
+/// A basic evaluation that uses area scoring.
+fn evaluate_game(board: &Vec<SpotState>, size: usize) -> (u64, u64) {
+    let mut visited = vec![false; board.len()];
+    let mut score_black = 0;
+    let mut score_white = 0;
+    for i in 0..board.len() {
+        match board[i].occupant {
+            Occupant::Black => score_black += 1,
+            Occupant::White => score_white += 1,
+            Occupant::Empty => {
+                if !visited[i] {
+                    let mut region = Vec::new();
+                    let mut queue = VecDeque::new();
+                    queue.push_back(i);
+                    visited[i] = true;
+                    while let Some(idx) = queue.pop_front() {
+                        region.push(idx);
+                        let x = idx % size;
+                        let y = idx / size;
+                        for (nx, ny) in neighbors(x, y, size) {
+                            let n_idx = coord_to_index(nx, ny, size);
+                            if !visited[n_idx] && board[n_idx].occupant == Occupant::Empty {
+                                visited[n_idx] = true;
+                                queue.push_back(n_idx);
+                            }
+                        }
+                    }
+                    // Determine border colors.
+                    let mut border_black = false;
+                    let mut border_white = false;
+                    for &idx in &region {
+                        let x = idx % size;
+                        let y = idx / size;
+                        for (nx, ny) in neighbors(x, y, size) {
+                            let n_idx = coord_to_index(nx, ny, size);
+                            match board[n_idx].occupant {
+                                Occupant::Black => border_black = true,
+                                Occupant::White => border_white = true,
+                                _ => {}
+                            }
+                        }
+                    }
+                    if border_black && !border_white {
+                        score_black += region.len() as u64;
+                    } else if border_white && !border_black {
+                        score_white += region.len() as u64;
+                    }
+                }
+            }
+        }
+    }
+    (score_black, score_white)
 }
 
 #[reducer]
@@ -203,20 +261,67 @@ pub fn client_disconnected(ctx: &ReducerContext) {
     }
 }
 
+/// Reducer to create a new game with optional handicap support.
 #[reducer]
-pub fn create_game(ctx: &ReducerContext, board_size: Option<u8>) -> Result<(), String> {
+pub fn create_game(
+    ctx: &ReducerContext,
+    board_size: Option<u8>,
+    handicap: Option<u8>,
+) -> Result<(), String> {
     let size = board_size.unwrap_or(DEFAULT_BOARD_SIZE);
-    let game_id = ctx.timestamp.to_micros_since_unix_epoch() as u64;
-    let board = init_board(size);
+    let game_id = ctx
+        .timestamp
+        .to_micros_since_unix_epoch()
+        .try_into()
+        .unwrap();
+    let mut board: Vec<SpotState> = (0..(size as usize * size as usize))
+        .map(|_| SpotState {
+            occupant: Occupant::Empty,
+            move_number: None,
+            marker: None,
+        })
+        .collect();
+    // Pre-place handicap stones if provided.
+    let handicap = handicap.unwrap_or(0);
+    if handicap > 0 {
+        // For simplicity, predefined handicap positions (for a 9x9 board; extend as needed).
+        let handicap_positions = match size {
+            9 => vec![(2, 2), (6, 6), (2, 6), (6, 2), (4, 4)],
+            13 => vec![(3, 3), (9, 9), (3, 9), (9, 3), (6, 6)],
+            19 => vec![(3, 3), (15, 15), (3, 15), (15, 3), (9, 9)],
+            _ => vec![],
+        };
+        for i in 0..(handicap as usize).min(handicap_positions.len()) {
+            let (x, y) = handicap_positions[i];
+            let idx = coord_to_index(x, y, size as usize);
+            board[idx].occupant = Occupant::Black;
+            board[idx].move_number = Some(
+                ctx.timestamp
+                    .to_micros_since_unix_epoch()
+                    .try_into()
+                    .unwrap(),
+            );
+        }
+    }
+    // If handicap is used, White starts; otherwise Black starts.
+    let turn = if handicap > 0 {
+        "W".to_string()
+    } else {
+        "B".to_string()
+    };
+    let board_json = serde_json::to_string(&board).unwrap();
     ctx.db.game().insert(Game {
         id: game_id,
         player_black: ctx.sender,
         player_white: None,
-        board,
-        turn: "B".to_string(),
+        board: board_json,
+        turn,
         passes: 0,
         board_size: size,
         previous_board: None,
+        game_over: false,
+        final_score_black: None,
+        final_score_white: None,
     });
     log::info!("Created game with id: {}", game_id);
     Ok(())
@@ -238,24 +343,49 @@ pub fn join_game(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     }
 }
 
-/// Reducer to place a stone at coordinates (x, y).
-/// It enforces:
-/// • A stone may only be placed on an empty intersection.
-/// • The move must be made by the correct player (per turn).
-/// • Capturing is performed on adjacent enemy groups with no liberties.
-/// • The move is illegal if it is suicide (i.e. the placed stone’s group has no liberties).
-/// • A simple ko rule is enforced by comparing the new board state with the previous state.
+/// Reducer to pass a turn. Two consecutive passes end the game.
 #[reducer]
-pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(), String> {
-    // Fetch game; error if not found.
+pub fn pass_move(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     let mut game = match ctx.db.game().id().find(game_id) {
         Some(g) => g,
         None => return Err("Game not found".to_string()),
     };
+    if game.game_over {
+        return Err("Game is already over".to_string());
+    }
+    game.passes += 1;
+    if game.passes >= 2 {
+        // End game: evaluate board.
+        let board: Vec<SpotState> = serde_json::from_str(&game.board).map_err(|e| e.to_string())?;
+        let (score_black, score_white) = evaluate_game(&board, game.board_size as usize);
+        game.final_score_black = Some(score_black);
+        game.final_score_white = Some(score_white);
+        game.game_over = true;
+    } else {
+        // Switch turn without changing the board.
+        game.turn = if game.turn == "B" {
+            "W".to_string()
+        } else {
+            "B".to_string()
+        };
+    }
+    ctx.db.game().id().update(game);
+    Ok(())
+}
+
+/// Reducer to place a stone at coordinates (x, y).
+#[reducer]
+pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(), String> {
+    let mut game = match ctx.db.game().id().find(game_id) {
+        Some(g) => g,
+        None => return Err("Game not found".to_string()),
+    };
+    if game.game_over {
+        return Err("Game is over".to_string());
+    }
     if game.player_white.is_none() {
         return Err("Waiting for second player".to_string());
     }
-    // Determine the stone color based on the sender and game turn.
     let stone_color = if ctx.sender == game.player_black {
         Occupant::Black
     } else if Some(ctx.sender) == game.player_white {
@@ -272,22 +402,21 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
         return Err("Not your turn".to_string());
     }
     let size = game.board_size as usize;
-    // Deserialize the board.
     let mut board: Vec<SpotState> = serde_json::from_str(&game.board).map_err(|e| e.to_string())?;
     let idx = coord_to_index(x as usize, y as usize, size);
     if board[idx].occupant != Occupant::Empty {
         return Err("Position already occupied".to_string());
     }
-    // Place the stone with a move number based on the timestamp.
-    let move_num = ctx.timestamp.to_micros_since_unix_epoch();
+    let move_num: u64 = ctx
+        .timestamp
+        .to_micros_since_unix_epoch()
+        .try_into()
+        .unwrap();
     board[idx].occupant = stone_color.clone();
     board[idx].move_number = Some(move_num);
-
-    // Save the current board state (before capturing) for ko checking later.
     let prev_board = game.board.clone();
 
-    // Check each neighboring cell: if it contains an opponent stone,
-    // determine its group and remove it if it has no liberties.
+    // Check each neighboring cell: capture opponent groups if they lose their liberties.
     let opponent = match stone_color {
         Occupant::Black => Occupant::White,
         Occupant::White => Occupant::Black,
@@ -302,24 +431,19 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
             }
         }
     }
-    // Check for suicide: the newly placed stone’s group must have at least one liberty.
+    // Check for suicide.
     let group = get_group_indices(&board, size, x as usize, y as usize);
     if !group_has_liberty(&board, size, &group) {
         return Err("Illegal move: suicide".to_string());
     }
-    // Serialize the updated board.
     let new_board_str = serde_json::to_string(&board).map_err(|e| e.to_string())?;
-    // Enforce a simple ko rule: disallow moves that would revert the board to the previous state.
+    // Basic ko rule: disallow move if board reverts to previous state.
     if let Some(prev) = &game.previous_board {
         if new_board_str == *prev {
             return Err("Illegal move: violates ko rule".to_string());
         }
     }
-    // Update game state:
-    // • Save the old board state for potential future ko checks.
-    // • Set the new board.
-    // • Reset the pass count.
-    // • Switch turn.
+    // Update game state.
     game.previous_board = Some(prev_board);
     game.board = new_board_str;
     game.passes = 0;

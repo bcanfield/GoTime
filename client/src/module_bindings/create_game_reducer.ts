@@ -33,6 +33,7 @@ import {
 
 export type CreateGame = {
   boardSize: number | undefined,
+  handicap: number | undefined,
 };
 
 /**
@@ -46,6 +47,7 @@ export namespace CreateGame {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("boardSize", AlgebraicType.createOptionType(AlgebraicType.createU8Type())),
+      new ProductTypeElement("handicap", AlgebraicType.createOptionType(AlgebraicType.createU8Type())),
     ]);
   }
 

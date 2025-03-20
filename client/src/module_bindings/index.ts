@@ -38,6 +38,8 @@ import { CreateGame } from "./create_game_reducer.ts";
 export { CreateGame };
 import { JoinGame } from "./join_game_reducer.ts";
 export { JoinGame };
+import { PassMove } from "./pass_move_reducer.ts";
+export { PassMove };
 import { PlaceStone } from "./place_stone_reducer.ts";
 export { PlaceStone };
 import { SendMessage } from "./send_message_reducer.ts";
@@ -91,6 +93,10 @@ const REMOTE_MODULE = {
       reducerName: "join_game",
       argsType: JoinGame.getTypeScriptAlgebraicType(),
     },
+    pass_move: {
+      reducerName: "pass_move",
+      argsType: PassMove.getTypeScriptAlgebraicType(),
+    },
     place_stone: {
       reducerName: "place_stone",
       argsType: PlaceStone.getTypeScriptAlgebraicType(),
@@ -133,6 +139,7 @@ export type Reducer = never
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "CreateGame", args: CreateGame }
 | { name: "JoinGame", args: JoinGame }
+| { name: "PassMove", args: PassMove }
 | { name: "PlaceStone", args: PlaceStone }
 | { name: "SendMessage", args: SendMessage }
 | { name: "SetName", args: SetName }
@@ -149,19 +156,19 @@ export class RemoteReducers {
     this.connection.offReducer("client_disconnected", callback);
   }
 
-  createGame(boardSize: number | undefined) {
-    const __args = { boardSize };
+  createGame(boardSize: number | undefined, handicap: number | undefined) {
+    const __args = { boardSize, handicap };
     let __writer = new BinaryWriter(1024);
     CreateGame.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("create_game", __argsBuffer, this.setCallReducerFlags.createGameFlags);
   }
 
-  onCreateGame(callback: (ctx: ReducerEventContext, boardSize: number | undefined) => void) {
+  onCreateGame(callback: (ctx: ReducerEventContext, boardSize: number | undefined, handicap: number | undefined) => void) {
     this.connection.onReducer("create_game", callback);
   }
 
-  removeOnCreateGame(callback: (ctx: ReducerEventContext, boardSize: number | undefined) => void) {
+  removeOnCreateGame(callback: (ctx: ReducerEventContext, boardSize: number | undefined, handicap: number | undefined) => void) {
     this.connection.offReducer("create_game", callback);
   }
 
@@ -179,6 +186,22 @@ export class RemoteReducers {
 
   removeOnJoinGame(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
     this.connection.offReducer("join_game", callback);
+  }
+
+  passMove(gameId: bigint) {
+    const __args = { gameId };
+    let __writer = new BinaryWriter(1024);
+    PassMove.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("pass_move", __argsBuffer, this.setCallReducerFlags.passMoveFlags);
+  }
+
+  onPassMove(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
+    this.connection.onReducer("pass_move", callback);
+  }
+
+  removeOnPassMove(callback: (ctx: ReducerEventContext, gameId: bigint) => void) {
+    this.connection.offReducer("pass_move", callback);
   }
 
   placeStone(gameId: bigint, x: number, y: number) {
@@ -240,6 +263,11 @@ export class SetReducerFlags {
   joinGameFlags: CallReducerFlags = 'FullUpdate';
   joinGame(flags: CallReducerFlags) {
     this.joinGameFlags = flags;
+  }
+
+  passMoveFlags: CallReducerFlags = 'FullUpdate';
+  passMove(flags: CallReducerFlags) {
+    this.passMoveFlags = flags;
   }
 
   placeStoneFlags: CallReducerFlags = 'FullUpdate';

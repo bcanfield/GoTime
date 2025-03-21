@@ -56,16 +56,21 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
 
   // Determine if it's the current user's turn.
   console.log({ turn, playerBlack, playerWhite, currentUser });
-  const isPlayersTurn =
-    currentUser &&
-    !gameOver &&
-    ((turn === "B" && getUserName(currentUser) === getUserName(playerBlack)) ||
-      (playerWhite &&
-        turn === "W" &&
-        getUserName(currentUser) === getUserName(playerWhite)));
 
-  // Handle cell selection. Only allow selecting empty cells when it's the user's turn.
-  const handleCellClick = (x: number, y: number) => {
+  // based on the current turn - get the corresponding player
+  const currentTurnPlayer = gameOver
+    ? undefined
+    : turn === "B"
+      ? playerBlack
+      : playerWhite;
+
+  const isPlayersTurn =
+    currentTurnPlayer &&
+    currentUser &&
+    getUserName(currentTurnPlayer) === getUserName(currentUser);
+
+  // Handle intersection (cell) selection. Only allow selecting empty intersections when it's the user's turn.
+  const handleIntersectionClick = (x: number, y: number) => {
     const idx = y * boardSize + x;
     const cell = parsedBoard[idx];
     if (!isPlayersTurn || cell.occupant !== "Empty") return;
@@ -84,32 +89,48 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
     setSelectedCell(null);
   };
 
-  // Render board rows. Each cell represents an intersection.
+  // Render board rows. Each cell contains an intersection point.
   const rows = [];
   for (let y = 0; y < boardSize; y++) {
     const cells = [];
     for (let x = 0; x < boardSize; x++) {
       const idx = y * boardSize + x;
       const cell: SpotState = parsedBoard[idx];
-      let display = "";
-      if (cell.occupant === "Black") display = "●";
-      else if (cell.occupant === "White") display = "○";
+      // Determine what to display:
+      // If a stone is placed, render it; otherwise, render a small dot.
+      let content;
+      console.log({ cell });
+      if (cell.occupant === "Black") {
+        content = <span className="text-black text-xl">●</span>;
+      } else if (cell.occupant === "White") {
+        content = <span className="text-white text-xl">○</span>;
+      } else {
+        // A small gray dot to denote an intersection.
+        content = <span className="block w-1 h-1 bg-gray-500 rounded-full" />;
+      }
 
-      // Allow interaction only if the cell is empty and it is the player's turn.
+      // Check if this intersection is selectable and/or selected.
       const selectable = isPlayersTurn && cell.occupant === "Empty";
-      // Highlight the cell if it's selected.
       const isSelected =
         selectedCell && selectedCell.x === x && selectedCell.y === y;
 
       cells.push(
-        <td
-          key={x}
-          onClick={() => handleCellClick(x, y)}
-          className={`w-10 h-10 border border-gray-400 text-center cursor-pointer 
-                      ${selectable ? "hover:bg-green-200" : "cursor-not-allowed"} 
-                      ${isSelected ? "bg-green-400" : ""}`}
-        >
-          {display}
+        <td key={x} className="w-10 h-10 relative">
+          {/* The intersection element */}
+          <div
+            onClick={() => handleIntersectionClick(x, y)}
+            className={clsx(
+              "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full",
+              "w-6 h-6",
+              {
+                "cursor-pointer hover:bg-green-200": selectable,
+                "cursor-not-allowed": !selectable,
+                "bg-green-400": isSelected,
+              }
+            )}
+          >
+            {content}
+          </div>
         </td>
       );
     }
@@ -126,9 +147,28 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
     <div>
       <div className="mb-4">
         <p>
+          <span
+            className={clsx({
+              hidden:
+                !currentTurnPlayer ||
+                getUserName(currentTurnPlayer) !== getUserName(playerBlack),
+            })}
+          >
+            Current Turn{" "}
+          </span>
           <strong>Player Black:</strong> {getUserName(playerBlack)}
         </p>
         <p>
+          <span
+            className={clsx({
+              hidden:
+                !currentTurnPlayer ||
+                !playerWhite ||
+                getUserName(currentTurnPlayer) !== getUserName(playerWhite),
+            })}
+          >
+            Current Turn{" "}
+          </span>
           <strong>Player White:</strong>{" "}
           {playerWhite ? getUserName(playerWhite) : "Waiting..."}
         </p>
@@ -179,7 +219,7 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
       {!game.gameOver && (
         <button
           onClick={onPass}
-          className={clsx("btn btn-warning", {
+          className={clsx("btn btn-warning mt-4", {
             "btn-disabled": !isPlayersTurn,
           })}
         >

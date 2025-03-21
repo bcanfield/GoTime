@@ -1,4 +1,4 @@
-import { createRootRoute } from "@tanstack/react-router";
+import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Drawer } from "../components/drawer";
 import { SpacetimeProvider } from "../providers/spacetime-provider";
@@ -11,7 +11,9 @@ function RootComponent() {
   return (
     <SpacetimeProvider>
       <>
-        <Drawer>asdfasdf</Drawer>
+        <Drawer>
+          <Outlet />
+        </Drawer>
 
         <TanStackRouterDevtools position="bottom-right" />
       </>

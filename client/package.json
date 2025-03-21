@@ -12,9 +12,11 @@
   "dependencies": {
     "@clockworklabs/spacetimedb-sdk": "^1.0.2",
     "@tailwindcss/vite": "^4.0.13",
+    "@tanstack/react-form": "^1.1.2",
     "@tanstack/react-router": "^1.114.25",
     "@tanstack/react-router-devtools": "^1.114.25",
     "@tanstack/router-plugin": "^1.114.25",
+    "clsx": "^2.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.0.13"

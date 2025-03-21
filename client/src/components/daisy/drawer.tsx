@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { useSpacetime } from "../../providers/spacetime-context";
+
 export const Drawer = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="drawer lg:drawer-open h-[calc(100%-3rem)]">
@@ -12,6 +15,7 @@ export const Drawer = ({ children }: { children: React.ReactNode }) => {
           className="drawer-overlay"
         ></label>
         <ul className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
+          <ProfileSection />
           <DrawerTabs />
         </ul>
       </div>
@@ -19,6 +23,54 @@ export const Drawer = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+const ProfileSection = () => {
+  const { users, identity, conn } = useSpacetime();
+  const [settingName, setSettingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const name = identity
+    ? users.get(identity.toHexString())?.name ||
+      identity.toHexString().substring(0, 8)
+    : "";
+  const onSubmitNewName = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSettingName(false);
+    conn?.reducers.setName(newName);
+  };
+  return (
+    <>
+      {!settingName ? (
+        <div className="flex items-center justify-between">
+          <p className="mb-2">{name}</p>
+          <button
+            onClick={() => {
+              setSettingName(true);
+              setNewName(name);
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Edit Name
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={onSubmitNewName} className="flex space-x-2">
+          <input
+            type="text"
+            aria-label="name input"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="border rounded px-2 py-1 flex-grow"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Submit
+          </button>
+        </form>
+      )}
+    </>
+  );
+};
 const DrawerTabs = () => {
   return (
     <div className="tabs tabs-lift">

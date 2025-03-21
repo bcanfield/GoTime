@@ -444,6 +444,7 @@ function Board({ game, onCellClick, onPass }: BoardProps) {
   }
   return (
     <div>
+      <p>Turn: {game.turn}</p>
       <table className="border-collapse mt-4">
         <tbody>{rows}</tbody>
       </table>

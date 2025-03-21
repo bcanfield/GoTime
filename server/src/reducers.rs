@@ -49,13 +49,20 @@ pub fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
     }
 }
 
+#[reducer(client_connected)]
 pub fn client_connected(ctx: &ReducerContext) {
+    log::info!("ADASDASD existing user {:?}", ctx.sender);
+
     if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
+        log::info!("Connected existing user {:?}", ctx.sender);
+
         ctx.db.user().identity().update(User {
             online: true,
             ..user
         });
     } else {
+        log::info!("Created user {:?}", ctx.sender);
+
         ctx.db.user().insert(User {
             name: None,
             identity: ctx.sender,

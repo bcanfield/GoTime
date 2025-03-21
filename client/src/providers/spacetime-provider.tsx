@@ -183,6 +183,7 @@ export const SpacetimeProvider: React.FC<{ children: React.ReactNode }> = ({
     const onUserInsert = (_ctx: EventContext, user: User) => {
       if (user.online) {
         const name = user.name || user.identity.toHexString().substring(0, 8);
+        console.log({ name });
         setSystemMessage((prev) => prev + `\n${name} has connected.`);
       }
     };

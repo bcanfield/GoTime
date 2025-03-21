@@ -61,7 +61,6 @@ function useGames(conn: DbConnection | null): Game[] {
       setGames((prev) => prev.filter((g) => g.id !== game.id));
     };
     const onUpdate = (_ctx: EventContext, _oldGame: Game, newGame: Game) => {
-      console.log("GAME UPDATED", { newGame });
       setGames((prev) => prev.map((g) => (g.id === newGame.id ? newGame : g)));
     };
     conn.db.game.onInsert(onInsert);

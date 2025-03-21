@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Occupant } from "../../App";
 import { useSpacetime } from "../../providers/spacetime-context";
-import { useGame } from "../../hooks/use-game";
 import clsx from "clsx";
 
 // todo: import this from the module bindings
@@ -19,23 +18,16 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
   // Get connection and currentUser from the provider.
   const { conn, identity: currentUser, getUserName, games } = useSpacetime();
 
-  const game = useMemo(() => {
-    console.log("Games:", games);
-    const foundGame = games.find((game) => game.id === gameId);
-    console.log("Found game:", foundGame);
-    return foundGame;
-  }, [games, gameId]);
+  const game = useMemo(
+    () => games.find((game) => game.id === gameId),
+    [games, gameId]
+  );
 
   // Subscribe to the specific game.
-  const gameSubscription = useGame(conn, gameId);
   const [selectedCell, setSelectedCell] = useState<{
     x: number;
     y: number;
   } | null>(null);
-
-  useEffect(() => {
-    console.log({ gameSubscription });
-  }, [gameSubscription]);
 
   if (!game) {
     return <div>Loading...</div>;
@@ -53,9 +45,6 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
   } catch (e) {
     console.error("Error parsing board:", e);
   }
-
-  // Determine if it's the current user's turn.
-  console.log({ turn, playerBlack, playerWhite, currentUser });
 
   // based on the current turn - get the corresponding player
   const currentTurnPlayer = gameOver
@@ -140,8 +129,6 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
   const onPass = () => {
     conn?.reducers.passMove(gameId);
   };
-
-  console.log({ playerBlack, currentUser });
 
   return (
     <div>

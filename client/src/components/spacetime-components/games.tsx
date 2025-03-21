@@ -4,13 +4,6 @@ import { useSpacetime } from "../..//providers/spacetime-context";
 const Games = () => {
   const { games, getUserName } = useSpacetime();
 
-  const onSelect = (gameId: bigint) => {
-    console.log("Selected game ID:", gameId);
-  };
-  const onCreateGame = () => {
-    console.log("Create game button clicked");
-  };
-
   return (
     <div className="grid gap-4">
       {games.length === 0 && (
@@ -29,7 +22,6 @@ const Games = () => {
           <div
             key={game.id.toString()}
             className="card bg-base-100 shadow hover:shadow-lg transition cursor-pointer"
-            onClick={() => onSelect?.(game.id)}
           >
             <div className="card-body">
               <h2 className="card-title">

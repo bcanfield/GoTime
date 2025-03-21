@@ -71,7 +71,6 @@ function useGames(conn: DbConnection | null): Game[] {
       setGames((prev) => prev.filter((g) => g.id !== game.id));
     };
     const onUpdate = (_ctx: EventContext, _oldGame: Game, newGame: Game) => {
-      console.log("GAME UPDATED", { newGame });
       setGames((prev) => prev.map((g) => (g.id === newGame.id ? newGame : g)));
     };
     conn.db.game.onInsert(onInsert);
@@ -183,7 +182,6 @@ export const SpacetimeProvider: React.FC<{ children: React.ReactNode }> = ({
     const onUserInsert = (_ctx: EventContext, user: User) => {
       if (user.online) {
         const name = user.name || user.identity.toHexString().substring(0, 8);
-        console.log({ name });
         setSystemMessage((prev) => prev + `\n${name} has connected.`);
       }
     };

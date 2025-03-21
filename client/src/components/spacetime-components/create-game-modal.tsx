@@ -31,9 +31,7 @@ export default function GameCreationFormModal({
   const { conn } = useSpacetime();
 
   const handleCreateGame = async ({ values }: { values: FormValues }) => {
-    console.log({ values });
-    // For demonstration, you can optionally pass a handicap (e.g., 2)
-    conn?.reducers.createGame(values.boardSize, 0); // 9x9 game without handicap.
+    conn?.reducers.createGame(values.boardSize, 0);
   };
   const form = useForm({
     defaultValues: {

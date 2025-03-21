@@ -1,5 +1,5 @@
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   DbConnection,
   ErrorContext,
@@ -204,6 +204,21 @@ export const SpacetimeProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [conn]);
 
+  //   const name =
+  // users.get(identity.toHexString())?.name ||
+  // identity.toHexString().substring(0, 8) ||
+  // "";
+
+  const getUserName = useCallback(
+    (identity: Identity) => {
+      return (
+        users.get(identity.toHexString())?.name ||
+        identity.toHexString().substring(0, 8)
+      );
+    },
+    [users]
+  );
+
   return (
     <SpacetimeContext.Provider
       value={{
@@ -214,6 +229,7 @@ export const SpacetimeProvider: React.FC<{ children: React.ReactNode }> = ({
         games,
         users,
         systemMessage,
+        getUserName,
       }}
     >
       {children}

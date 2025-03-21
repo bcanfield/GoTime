@@ -52,7 +52,7 @@ export default function ChatBox() {
   };
 
   return (
-    <div className="max-w-md mx-auto   rounded-xl shadow bg-base-100 h-[500px] flex flex-col">
+    <ul className="  shadow bg-base-100 h-[500px] flex flex-col">
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
@@ -91,10 +91,10 @@ export default function ChatBox() {
           Scroll to bottom
         </button>
       )}
-
+      <li></li>
       <form
         onSubmit={onMessageSubmit}
-        className="sticky bottom-0 p-4 bg-base-100 border-t border-base-300 flex gap-2 items-center"
+        className="sticky bottom-0 p-4 bg-base-100  flex gap-2 items-center"
       >
         <input
           type="text"
@@ -108,6 +108,6 @@ export default function ChatBox() {
           Send
         </button>
       </form>
-    </div>
+    </ul>
   );
 }

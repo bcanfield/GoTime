@@ -11,6 +11,7 @@ export type SpacetimeContextType = {
   games: Game[];
   users: Map<string, User>;
   systemMessage: string;
+  getUserName: (identity: Identity) => string;
 };
 
 // Create the context with an initial default value
@@ -22,6 +23,7 @@ export const SpacetimeContext = createContext<SpacetimeContextType>({
   games: [],
   users: new Map(),
   systemMessage: "",
+  getUserName: (identity: Identity) => identity.toHexString(),
 });
 
 // Custom hook for consuming the context

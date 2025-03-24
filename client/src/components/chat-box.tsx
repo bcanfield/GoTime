@@ -10,7 +10,7 @@ export default function ChatBox() {
   const prettyMessages = useMemo(
     () =>
       messages
-        .sort((a, b) => (a.sent > b.sent ? 1 : -1))
+        // .sort((a, b) => (a.sent > b.sent ? 1 : -1))
         .map((message) => ({
           senderName:
             users.get(message.sender.toHexString())?.name ||
@@ -67,7 +67,8 @@ export default function ChatBox() {
             <div className="chat-header">
               {msg.senderName}
               <time className="opacity-50">
-                {msg.timestamp.toDate().toDateString()}
+                {msg.timestamp.toDate().toDateString()}{" "}
+                {msg.timestamp.toDate().toLocaleTimeString()}
               </time>
             </div>
             <div className="chat-bubble">{msg.text}</div>

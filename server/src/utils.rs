@@ -69,61 +69,6 @@ pub fn remove_group(board: &mut [SpotState], group: &HashSet<usize>) {
     }
 }
 
-/// Evaluate the board using a simple area scoring method.
-/// Returns (score_black, score_white).
-pub fn evaluate_game(board: &[SpotState], size: usize) -> (u64, u64) {
-    let mut visited = vec![false; board.len()];
-    let mut score_black = 0;
-    let mut score_white = 0;
-    for i in 0..board.len() {
-        match board[i].occupant {
-            Occupant::Black => score_black += 1,
-            Occupant::White => score_white += 1,
-            Occupant::Empty => {
-                if !visited[i] {
-                    let mut region = Vec::new();
-                    let mut queue = VecDeque::new();
-                    queue.push_back(i);
-                    visited[i] = true;
-                    while let Some(idx) = queue.pop_front() {
-                        region.push(idx);
-                        let x = idx % size;
-                        let y = idx / size;
-                        for (nx, ny) in neighbors(x, y, size) {
-                            let n_idx = coord_to_index(nx, ny, size);
-                            if !visited[n_idx] && board[n_idx].occupant == Occupant::Empty {
-                                visited[n_idx] = true;
-                                queue.push_back(n_idx);
-                            }
-                        }
-                    }
-                    // Determine border colors.
-                    let mut border_black = false;
-                    let mut border_white = false;
-                    for &idx in &region {
-                        let x = idx % size;
-                        let y = idx / size;
-                        for (nx, ny) in neighbors(x, y, size) {
-                            let n_idx = coord_to_index(nx, ny, size);
-                            match board[n_idx].occupant {
-                                Occupant::Black => border_black = true,
-                                Occupant::White => border_white = true,
-                                _ => {}
-                            }
-                        }
-                    }
-                    if border_black && !border_white {
-                        score_black += region.len() as u64;
-                    } else if border_white && !border_black {
-                        score_white += region.len() as u64;
-                    }
-                }
-            }
-        }
-    }
-    (score_black, score_white)
-}
-
 /// Pure function to apply a move on a board.
 /// Returns the updated board and a new board serialization string.
 pub fn apply_move_to_board(

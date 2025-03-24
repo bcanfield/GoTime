@@ -1,5 +1,5 @@
 use crate::models::{Occupant, SpotState};
-use crate::utils::{apply_move_to_board, coord_to_index, evaluate_game};
+use crate::utils::{apply_move_to_board, coord_to_index};
 
 /// Helper: Create an empty board as a Vec<SpotState>.
 fn empty_board(size: usize) -> Vec<SpotState> {
@@ -127,25 +127,25 @@ fn test_ko_rule() {
     );
 }
 
-#[test]
-fn test_pass_and_game_over() {
-    let size = 5;
-    let board = empty_board(size);
-    let mut board = board;
-    let ts = 1000;
-    for y in 0..3 {
-        for x in 0..3 {
-            let idx = coord_to_index(x, y, size);
-            board[idx].occupant = Occupant::Black;
-            board[idx].move_number = Some(ts);
-        }
-    }
-    let (score_black, score_white) = evaluate_game(&board, size);
-    assert!(
-        score_black > score_white,
-        "Black should have a higher score"
-    );
-}
+// #[test]
+// fn test_pass_and_game_over() {
+//     let size = 5;
+//     let board = empty_board(size);
+//     let mut board = board;
+//     let ts = 1000;
+//     for y in 0..3 {
+//         for x in 0..3 {
+//             let idx = coord_to_index(x, y, size);
+//             board[idx].occupant = Occupant::Black;
+//             board[idx].move_number = Some(ts);
+//         }
+//     }
+//     let (score_black, score_white) = evaluate_game(&board, size);
+//     assert!(
+//         score_black > score_white,
+//         "Black should have a higher score"
+//     );
+// }
 
 #[test]
 fn test_handicap_creation() {

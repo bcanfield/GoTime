@@ -32,6 +32,8 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
+import { ClientConnected } from "./client_connected_reducer.ts";
+export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
 import { CreateGame } from "./create_game_reducer.ts";
@@ -81,6 +83,10 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
+    client_connected: {
+      reducerName: "client_connected",
+      argsType: ClientConnected.getTypeScriptAlgebraicType(),
+    },
     client_disconnected: {
       reducerName: "client_disconnected",
       argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
@@ -136,6 +142,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
+| { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "CreateGame", args: CreateGame }
 | { name: "JoinGame", args: JoinGame }
@@ -147,6 +154,14 @@ export type Reducer = never
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
+
+  onClientConnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("client_connected", callback);
+  }
+
+  removeOnClientConnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("client_connected", callback);
+  }
 
   onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("client_disconnected", callback);

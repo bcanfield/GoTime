@@ -53,11 +53,6 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
       ? playerBlack
       : playerWhite;
 
-  const isPlayersTurn =
-    currentTurnPlayer &&
-    currentUser &&
-    getUserName(currentTurnPlayer) === getUserName(currentUser);
-
   // Handle intersection (cell) selection. Only allow selecting empty intersections when it's the user's turn.
   const handleIntersectionClick = (x: number, y: number) => {
     const idx = y * boardSize + x;
@@ -74,9 +69,11 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
     }
   };
 
-  const handleCancelSelection = () => {
-    setSelectedCell(null);
-  };
+  const isPlayersTurn =
+    currentTurnPlayer &&
+    playerWhite &&
+    currentUser &&
+    getUserName(currentTurnPlayer) === getUserName(currentUser);
 
   // Render board rows. Each cell contains an intersection point.
   const rows = [];
@@ -130,97 +127,88 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
     conn?.reducers.passMove(gameId);
   };
 
+  const playerBlacksTurn =
+    currentTurnPlayer &&
+    playerWhite &&
+    getUserName(currentTurnPlayer) === getUserName(playerBlack);
+  const playerWhitesTurn =
+    currentTurnPlayer &&
+    playerWhite &&
+    getUserName(currentTurnPlayer) === getUserName(playerWhite);
+
   return (
-    <div>
-      <div className="mb-4">
-        <p>
-          <span
-            className={clsx({
-              hidden:
-                !currentTurnPlayer ||
-                getUserName(currentTurnPlayer) !== getUserName(playerBlack),
-            })}
-          >
-            Current Turn{" "}
-          </span>
-          <strong>Player Black:</strong> {getUserName(playerBlack)}
-        </p>
-        <p>
-          <span
-            className={clsx({
-              hidden:
-                !currentTurnPlayer ||
-                !playerWhite ||
-                getUserName(currentTurnPlayer) !== getUserName(playerWhite),
-            })}
-          >
-            Current Turn{" "}
-          </span>
-          <strong>Player White:</strong>{" "}
-          {playerWhite ? getUserName(playerWhite) : "Waiting..."}
-        </p>
-        <p>
-          <strong>Current Turn:</strong> {turn}
-        </p>
-        {!playerWhite && (
-          <button
-            onClick={() => joinGame(game.id)}
-            className={clsx("btn btn-primary", {
-              "btn-disabled":
-                !currentUser ||
-                getUserName(playerBlack) === getUserName(currentUser),
-            })}
-          >
-            Join
-          </button>
-        )}
-        {!isPlayersTurn && (
-          <p className="text-red-600">It&apos;s not your turn.</p>
-        )}
+    <div className="max-w-md space-y-4">
+      <div className="flex justify-between w-full">
+        <div
+          className={`flex flex-col items-center gap-1.5   ${
+            playerBlacksTurn ? "font-bold text-primary" : "text-neutral"
+          }`}
+        >
+          <div className={`badge badge-lg badge-neutral`}>Black</div>
+          <div className="text-sm">{getUserName(playerBlack)}</div>
+          {playerBlacksTurn && (
+            <span className="badge badge-primary">Your Turn</span>
+          )}
+        </div>
+
+        <div
+          className={`flex flex-col items-center gap-1.5 ${
+            playerWhitesTurn ? "font-bold text-primary" : "text-neutral"
+          }`}
+        >
+          <div className={`badge badge-lg badge-secondary`}>White</div>
+          <div className="text-sm">
+            {playerWhite ? getUserName(playerWhite) : "Waiting..."}
+          </div>
+          {playerWhitesTurn && (
+            <span className="badge badge-primary">Your Turn</span>
+          )}
+        </div>
       </div>
 
-      <table className="border-collapse mt-4">
-        <tbody>{rows}</tbody>
-      </table>
+      <div className="flex items-center w-full justify-center">
+        <table className="border-collapse">
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
 
-      {selectedCell && (
-        <div className="mt-4">
-          <p>
-            Confirm move at intersection ({selectedCell.x}, {selectedCell.y})?
-          </p>
-          <button
-            onClick={handleConfirmMove}
-            className="mr-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Confirm
-          </button>
-          <button
-            onClick={handleCancelSelection}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {!game.gameOver && (
+      {!playerWhite ? (
         <button
-          onClick={onPass}
-          className={clsx("btn btn-warning mt-4", {
-            "btn-disabled": !isPlayersTurn,
+          onClick={() => joinGame(game.id)}
+          className={clsx("btn btn-primary w-full", {
+            "btn-disabled":
+              !currentUser ||
+              getUserName(playerBlack) === getUserName(currentUser),
           })}
         >
-          Pass
+          Join
         </button>
-      )}
-
-      {game.gameOver && (
-        <div className="mt-4 p-4 border rounded bg-secondary text-secondary-content">
+      ) : game.gameOver ? (
+        <div className=" p-4 border rounded bg-secondary text-secondary-content">
           <h2 className="text-xl font-bold">Game Over</h2>
           <p>
             Final Score: Black: {game.finalScoreBlack || 0} - White:{" "}
             {game.finalScoreWhite || 0}
           </p>
+        </div>
+      ) : (
+        <div className="flex gap-4 justify-between">
+          <button
+            className={clsx("btn btn-secondary", {
+              "btn-disabled": !isPlayersTurn,
+            })}
+            onClick={onPass}
+          >
+            Pass
+          </button>
+          <button
+            onClick={handleConfirmMove}
+            className={clsx("btn btn-primary", {
+              "btn-disabled": !selectedCell,
+            })}
+          >
+            Confirm Move
+          </button>
         </div>
       )}
     </div>

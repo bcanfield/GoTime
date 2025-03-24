@@ -1,6 +1,7 @@
 use crate::models::{game, message, user};
-use crate::models::{Game, Message, Occupant, SpotState, User};
-use crate::utils::{apply_move_to_board, coord_to_index, evaluate_game};
+use crate::models::{Game, Message, Occupant, ScoringMethod, SpotState, User};
+use crate::scoring::calculate_score;
+use crate::utils::{apply_move_to_board, coord_to_index};
 use serde_json;
 use spacetimedb::{reducer, ReducerContext, Table};
 use std::convert::TryInto;
@@ -175,10 +176,10 @@ pub fn pass_move(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     }
     game.passes += 1;
     if game.passes >= 2 {
-        let board: Vec<SpotState> = serde_json::from_str(&game.board).map_err(|e| e.to_string())?;
-        let (score_black, score_white) = evaluate_game(&board, game.board_size as usize);
-        game.final_score_black = Some(score_black);
-        game.final_score_white = Some(score_white);
+        let game_board = game.as_board().unwrap();
+        let (black_score, white_score) = calculate_score(&game_board, ScoringMethod::Area, 6.5);
+        game.final_score_black = Some(black_score);
+        game.final_score_white = Some(white_score);
         game.game_over = true;
     } else {
         game.turn = if game.turn == "B" {

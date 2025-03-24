@@ -595,4 +595,142 @@ mod tests {
         assert_eq!(black_area, 9.0);
         assert_eq!(white_area, 6.5);
     }
+
+    // Test 6: Neutral Region Test (Mixed Border)
+    #[test]
+    fn test_neutral_region() {
+        let board_size = 3;
+        let mut vec = vec![Occupant::Empty; 9];
+        vec[0] = Occupant::Black; // (0,0)
+        vec[8] = Occupant::White; // (2,2)
+        let board = create_board_from_vec(vec, board_size);
+
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        assert_eq!(black_territory, 0.0);
+        assert_eq!(white_territory, 6.5);
+
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        assert_eq!(black_area, 1.0);
+        assert_eq!(white_area, 1.0 + 6.5);
+    }
+
+    // Test 7: Multiple Regions Test
+    #[test]
+    fn test_multiple_regions() {
+        let board_size = 5;
+        let total = (board_size as usize).pow(2);
+        let mut vec = vec![Occupant::Black; total];
+        // Region A: (2,2) is internal, so should be counted as Black territory.
+        vec[(2 as usize) * (board_size as usize) + 2] = Occupant::Empty;
+        // Region B: (0,4) is on the edge, so it is open.
+        vec[(0 as usize) * (board_size as usize) + 4] = Occupant::Empty;
+        let board = create_board_from_vec(vec, board_size);
+
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        // Only Region A (internal) counts as territory.
+        assert_eq!(black_territory, 1.0);
+        assert_eq!(white_territory, 6.5);
+
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        // Black stones: 23, plus enclosed territory 1.
+        assert_eq!(black_area, 23.0 + 1.0);
+        assert_eq!(white_area, 6.5);
+    }
+
+    // Test 8: Dead Stone Removal Effect on Scoring
+    #[test]
+    fn test_dead_stone_removal_scoring() {
+        let board_size = 3;
+        // Layout:
+        // Row0: White, White, White
+        // Row1: White, Black, White
+        // Row2: White, White, White
+        let mut vec = Vec::with_capacity(9);
+        for row in 0..board_size {
+            for col in 0..board_size {
+                if row == 1 && col == 1 {
+                    vec.push(Occupant::Black);
+                } else {
+                    vec.push(Occupant::White);
+                }
+            }
+        }
+        let mut board = create_board_from_vec(vec, board_size);
+        let _removed_groups = remove_dead_stones(&mut board);
+
+        // After removal, the cell (1,1) should be Empty (with marker "removed"),
+        // and all other cells should remain White.
+        for row in 0..board_size {
+            for col in 0..board_size {
+                if row == 1 && col == 1 {
+                    let spot = board.get(row, col).unwrap();
+                    assert_eq!(spot.occupant, Occupant::Empty);
+                    assert_eq!(spot.marker.as_deref(), Some("removed"));
+                } else {
+                    assert_eq!(board.get(row, col).unwrap().occupant, Occupant::White);
+                }
+            }
+        }
+
+        // Scoring: For area scoring, White stones = 8 and the removed empty cell
+        // will be counted as territory if fully enclosed by White.
+        // In a 3x3 board, (1,1) is internal so its empty region should count for White.
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        // White area = 8 (White stones) + 1 (territory from (1,1)) + komi.
+        assert_eq!(black_area, 0.0);
+        assert_eq!(white_area, 8.0 + 1.0 + 6.5);
+
+        // For territory scoring, the only territory is (1,1) for White.
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        assert_eq!(black_territory, 0.0);
+        assert_eq!(white_territory, 1.0 + 6.5);
+    }
+    // Test 9: Complex Configuration / Real-Game Scenario
+    #[test]
+    fn test_complex_configuration_scoring() {
+        let board_size = 5;
+        let mut vec = Vec::with_capacity((board_size as usize).pow(2));
+        for row in 0..board_size {
+            for col in 0..board_size {
+                if row == 0 || row == board_size - 1 || col == 0 || col == board_size - 1 {
+                    vec.push(Occupant::Black);
+                } else if row == 2 && col == 2 {
+                    vec.push(Occupant::Black);
+                } else {
+                    vec.push(Occupant::Empty);
+                }
+            }
+        }
+        let board = create_board_from_vec(vec, board_size);
+
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        assert_eq!(black_territory, 8.0);
+        assert_eq!(white_territory, 6.5);
+
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        assert_eq!(black_area, 17.0 + 8.0);
+        assert_eq!(white_area, 6.5);
+    }
+
+    // Test 10: Komi Application Test
+    #[test]
+    fn test_komi_application() {
+        let board_size = 3;
+        let mut vec = vec![Occupant::White; 9];
+        vec[4] = Occupant::Empty; // center is empty and fully enclosed by White
+        let board = create_board_from_vec(vec, board_size);
+
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 7.5);
+        assert_eq!(black_territory, 0.0);
+        assert_eq!(white_territory, 1.0 + 7.5);
+
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 7.5);
+        assert_eq!(black_area, 0.0);
+        assert_eq!(white_area, 8.0 + 1.0 + 7.5);
+    }
 }

@@ -1,4 +1,3 @@
-import React from "react";
 import { useForm } from "@tanstack/react-form";
 import type { AnyFieldApi } from "@tanstack/react-form";
 import { useSpacetime } from "../../providers/spacetime-context";

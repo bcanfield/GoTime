@@ -41,9 +41,9 @@ const Chat = () => {
           <div className="chat chat-start" key={key}>
             <div className="chat-header">
               {message.senderName}
-              <time className="text-xs opacity-50">
-                {message.timestamp.toDate().toDateString()}
-              </time>
+              {/* <time className="text-xs opacity-50">
+                {message.timestamp.toDate().toTimeString()}
+              </time> */}
             </div>
             <div className="chat-bubble">{message.text}</div>
           </div>

@@ -892,4 +892,113 @@ mod tests {
             assert_eq!(black_territory, 9.0);
         }
     }
+
+    // Test 15: Pre-Removed Dead Stones Test
+    // This test simulates a board where dead stones have already been removed.
+    // Here we create a 3x3 board that would have had a Black stone at (1,1),
+    // but it is pre-marked as removed (Empty with marker "removed").
+    // All other cells are White.
+    // According to Japanese territory scoring, the now-empty internal cell
+    // is fully enclosed by White and should count as White territory.
+    #[test]
+    fn test_pre_removed_dead_stones() {
+        let board_size = 3;
+        let total = (board_size as usize).pow(2);
+        let mut vec = vec![Occupant::White; total];
+        let total = (board_size as usize).pow(2);
+        let mut vec = vec![Occupant::White; total]; // no extra mut removal here if needed
+                                                    // Compute index for (1,1): index = 1 * board_size + 1.
+        let center_index = 1 * (board_size as usize) + 1;
+        vec[center_index] = Occupant::Empty; // Pre-removed dead stone.
+                                             // Manually create a board with the pre-removed stone.
+        let board = create_board_from_vec(vec, board_size);
+
+        // Territory scoring: the internal empty cell should count as territory for White.
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        // Expected: Black 0; White gets territory of 1 plus komi.
+        assert_eq!(black_territory, 0.0);
+        assert_eq!(white_territory, 1.0 + 6.5);
+
+        // Area scoring: White stones count = 8 and the empty (removed) cell is counted as territory.
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        assert_eq!(black_area, 0.0);
+        assert_eq!(white_area, 8.0 + 1.0 + 6.5);
+    }
+
+    // Test 16: No False Territory Assignment
+    // Ensure that an empty region which touches both Black and White is not assigned to either.
+    // We'll create a 3x3 board with:
+    // Row0: Black, Empty, White
+    // Rows1-2: all Empty.
+    // The large empty region touches both Black and White, so neither side gets territory.
+    #[test]
+    fn test_no_false_territory_assignment() {
+        let board_size = 3;
+        let total = (board_size as usize).pow(2);
+        // Start with an entirely empty board.
+        let mut vec = vec![Occupant::Empty; total];
+        // Place a Black stone at (0,0) and a White stone at (0,2).
+        let mut board_vec = vec.clone();
+        board_vec[0] = Occupant::Black; // (0,0)
+        board_vec[2] = Occupant::White; // (0,2)
+        let board = create_board_from_vec(board_vec, board_size);
+
+        // Territory scoring: the single empty region touches both colors,
+        // so no territory should be awarded.
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        assert_eq!(black_territory, 0.0);
+        // White only gets komi.
+        assert_eq!(white_territory, 6.5);
+
+        // Area scoring: No enclosed territory, so only stones count.
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        // Black has 1 stone, White has 1 stone, plus komi for White.
+        assert_eq!(black_area, 1.0);
+        assert_eq!(white_area, 1.0 + 6.5);
+    }
+
+    // Test 17: Known Board Position from Literature
+    // Use a known 5x5 configuration (from literature or trusted source) where:
+    // - Black forms a border around an inner region.
+    // - Board layout:
+    //   Row0: B, B, B, B, B
+    //   Row1: B, Empty, Empty, Empty, B
+    //   Row2: B, Empty, B, Empty, B
+    //   Row3: B, Empty, Empty, Empty, B
+    //   Row4: B, B, B, B, B
+    // Expected for Territory scoring:
+    //   Black territory = 8 (the internal empty region, not touching the edge)
+    //   White territory = 0 (plus komi for White)
+    // Expected for Area scoring:
+    //   Black stones = 17, plus territory = 8 => 25.
+    #[test]
+    fn test_known_board_position() {
+        let board_size = 5;
+        let mut vec = Vec::with_capacity((board_size as usize).pow(2));
+        for row in 0..board_size {
+            for col in 0..board_size {
+                if row == 0 || row == board_size - 1 || col == 0 || col == board_size - 1 {
+                    vec.push(Occupant::Black);
+                } else if row == 2 && col == 2 {
+                    vec.push(Occupant::Black);
+                } else {
+                    vec.push(Occupant::Empty);
+                }
+            }
+        }
+        let board = create_board_from_vec(vec, board_size);
+
+        // Territory scoring: Only the internal empty region counts.
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 6.5);
+        assert_eq!(black_territory, 8.0);
+        assert_eq!(white_territory, 6.5);
+
+        // Area scoring: Black stones = 17 + territory (8) = 25.
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 6.5);
+        assert_eq!(black_area, 17.0 + 8.0);
+        assert_eq!(white_area, 6.5);
+    }
 }

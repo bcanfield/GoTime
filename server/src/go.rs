@@ -292,22 +292,22 @@ pub fn calculate_score(board: &Board, method: ScoringMethod, komi: f32) -> (f32,
 /// Create a simple annotation for each spot (useful for debugging).
 /// Occupied spots are annotated with their color and move number,
 /// while empty spots are annotated as "Neutral".
-pub fn annotate_board(board: &Board) -> Vec<Vec<String>> {
-    let mut annotations =
-        vec![vec!["".to_string(); board.board_size as usize]; board.board_size as usize];
-    for row in 0..board.board_size {
-        for col in 0..board.board_size {
-            let spot = board.get(row, col).unwrap();
-            let annotation = match spot.occupant {
-                Occupant::Black => format!("Black (move {:?})", spot.move_number),
-                Occupant::White => format!("White (move {:?})", spot.move_number),
-                Occupant::Empty => "Neutral".to_string(),
-            };
-            annotations[row as usize][col as usize] = annotation;
-        }
-    }
-    annotations
-}
+// pub fn annotate_board(board: &Board) -> Vec<Vec<String>> {
+//     let mut annotations =
+//         vec![vec!["".to_string(); board.board_size as usize]; board.board_size as usize];
+//     for row in 0..board.board_size {
+//         for col in 0..board.board_size {
+//             let spot = board.get(row, col).unwrap();
+//             let annotation = match spot.occupant {
+//                 Occupant::Black => format!("Black (move {:?})", spot.move_number),
+//                 Occupant::White => format!("White (move {:?})", spot.move_number),
+//                 Occupant::Empty => "Neutral".to_string(),
+//             };
+//             annotations[row as usize][col as usize] = annotation;
+//         }
+//     }
+//     annotations
+// }
 
 #[cfg(test)]
 mod tests {
@@ -732,5 +732,164 @@ mod tests {
         let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 7.5);
         assert_eq!(black_area, 0.0);
         assert_eq!(white_area, 8.0 + 1.0 + 7.5);
+    }
+
+    // Test 11: Single Intersection Region Test
+    // A board with a single empty cell that is completely enclosed (does not touch the board edge)
+    // by White stones should count fully as White territory.
+    #[test]
+    fn test_single_intersection_region() {
+        // Use a 5x5 board so that an internal cell is fully enclosed.
+        let board_size = 5;
+        let total = (board_size as usize).pow(2);
+        // Fill the board with White.
+        let mut vec = vec![Occupant::White; total];
+        // Make the central cell (2,2) empty.
+        vec[(2 as usize) * (board_size as usize) + 2] = Occupant::Empty;
+        let board = create_board_from_vec(vec, board_size);
+
+        // Territory scoring: The internal empty cell is completely enclosed by White,
+        // so it should count as 1 territory point for White.
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 0.0);
+        assert_eq!(black_territory, 0.0);
+        assert_eq!(white_territory, 1.0);
+
+        // Area scoring: White stones = total - 1, plus territory 1 equals total.
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 0.0);
+        assert_eq!(white_area, (total as f32 - 1.0) + 1.0);
+        assert_eq!(black_area, 0.0);
+    }
+
+    // Test 12: Overlapping Groups/Adjacent Groups Test
+    // Create a board where two separate Black groups have an empty cell between them.
+    // That gap should be merged (as one contiguous empty region) and count as territory for Black
+    // if it is fully enclosed by Black.
+    #[test]
+    fn test_overlapping_groups_territory() {
+        // Use a 7x7 board.
+        let board_size = 7;
+        let total = (board_size as usize).pow(2);
+        // Fill the board with Black.
+        let mut vec = vec![Occupant::Black; total];
+        // Carve out a connected empty region inside that does not touch the edge.
+        // For example, remove stones from these cells:
+        // (3,2), (3,3), (3,4), (4,3) -- they form a T-shape region.
+        vec[(3 * board_size as usize) + 2] = Occupant::Empty;
+        vec[(3 * board_size as usize) + 3] = Occupant::Empty;
+        vec[(3 * board_size as usize) + 4] = Occupant::Empty;
+        vec[(4 * board_size as usize) + 3] = Occupant::Empty;
+        // This empty region is fully enclosed by Black and its size should be 4.
+        let board = create_board_from_vec(vec, board_size);
+
+        // Territory scoring: The empty region (if not touching the edge) counts as Black's territory.
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 0.0);
+        // Since the board border is Black, the empty region does not touch the edge.
+        assert_eq!(black_territory, 4.0);
+        assert_eq!(white_territory, 0.0);
+
+        // Area scoring: Black stones count plus territory.
+        // Total Black stones = total cells - 4, plus territory 4 equals total.
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 0.0);
+        assert_eq!(black_area, (total as f32 - 4.0) + 4.0);
+        assert_eq!(white_area, 0.0);
+    }
+
+    // Test 13: Consistency Between Scoring Methods Test
+    // For a given board configuration, verify that although absolute scores differ,
+    // the winner (and relative advantage) is consistent between area and territory scoring.
+    #[test]
+    fn test_scoring_consistency() {
+        // 5x5 board with a clear advantage for Black.
+        // Layout:
+        // Row0: B, B, B, B, B
+        // Row1: B, Empty, Empty, Empty, B
+        // Row2: B, Empty, B, Empty, B
+        // Row3: B, Empty, Empty, Empty, B
+        // Row4: B, B, B, B, B
+        // Black encloses 8 empty cells as territory and has 17 stones on board.
+        let board_size = 5;
+        let mut vec = Vec::with_capacity((board_size as usize).pow(2));
+        for row in 0..board_size {
+            for col in 0..board_size {
+                if row == 0 || row == board_size - 1 || col == 0 || col == board_size - 1 {
+                    vec.push(Occupant::Black);
+                } else if row == 2 && col == 2 {
+                    vec.push(Occupant::Black);
+                } else {
+                    vec.push(Occupant::Empty);
+                }
+            }
+        }
+        let board = create_board_from_vec(vec, board_size);
+
+        // Calculate scores using both methods (without komi).
+        let (black_territory, white_territory) =
+            calculate_score(&board, ScoringMethod::Territory, 0.0);
+        let (black_area, white_area) = calculate_score(&board, ScoringMethod::Area, 0.0);
+
+        // In Territory scoring: Black gets territory = 8, White gets 0.
+        // In Area scoring: Black = 17 + 8 = 25.
+        // In both cases, Black wins.
+        assert!(black_territory > white_territory);
+        assert!(black_area > white_area);
+    }
+
+    // Test 14: Various Board Sizes Test
+    // Verify that scoring works on boards of different sizes.
+    #[test]
+    fn test_various_board_sizes() {
+        // Test on 3x3 board
+        {
+            let board_size = 3;
+            let total = (board_size as usize).pow(2);
+            // A board with center empty and others Black.
+            let mut vec = vec![Occupant::Black; total];
+            vec[4] = Occupant::Empty; // center cell (1,1)
+            let board = create_board_from_vec(vec, board_size);
+            let (black_territory, _) = calculate_score(&board, ScoringMethod::Territory, 0.0);
+            // In a 3x3 board, center touches all sides? Actually, center does not touch edge.
+            // So territory = 1.
+            assert_eq!(black_territory, 1.0);
+        }
+        // Test on 5x5 board (using previous complex configuration from test 9)
+        {
+            let board_size = 5;
+            let mut vec = Vec::with_capacity((board_size as usize).pow(2));
+            for row in 0..board_size {
+                for col in 0..board_size {
+                    if row == 0 || row == board_size - 1 || col == 0 || col == board_size - 1 {
+                        vec.push(Occupant::Black);
+                    } else if row == 2 && col == 2 {
+                        vec.push(Occupant::Black);
+                    } else {
+                        vec.push(Occupant::Empty);
+                    }
+                }
+            }
+            let board = create_board_from_vec(vec, board_size);
+            let (black_territory, _) = calculate_score(&board, ScoringMethod::Territory, 0.0);
+            // As in test 9, internal empty region (8 cells) is fully enclosed.
+            assert_eq!(black_territory, 8.0);
+        }
+        // Test on 9x9 board: Construct a simple scenario with a small fully enclosed territory.
+        {
+            let board_size = 9;
+            let total = (board_size as usize).pow(2);
+            // Create a board with all cells Black.
+            let mut vec = vec![Occupant::Black; total];
+            // Carve out an internal 3x3 empty block that does not touch the border.
+            for row in 3..6 {
+                for col in 3..6 {
+                    let idx = (row as usize) * (board_size as usize) + (col as usize);
+                    vec[idx] = Occupant::Empty;
+                }
+            }
+            let board = create_board_from_vec(vec, board_size);
+            let (black_territory, _) = calculate_score(&board, ScoringMethod::Territory, 0.0);
+            // The empty region is 3x3 = 9 cells, and it is fully enclosed by Black.
+            assert_eq!(black_territory, 9.0);
+        }
     }
 }

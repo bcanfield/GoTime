@@ -1,23 +1,6 @@
-// board_evaluator.rs
+use crate::models::{Occupant, SpotState};
 
-use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
-
-/// The Occupant enum represents what is on a given board spot.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Occupant {
-    Empty,
-    Black,
-    White,
-}
-
-/// A SpotState holds the state for one board intersection.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SpotState {
-    pub occupant: Occupant,
-    pub move_number: Option<u64>,
-    pub marker: Option<String>,
-}
 
 /// The Game struct from your data model is left elsewhere.
 /// Here we work on the board as a Vec<SpotState> and the board size.

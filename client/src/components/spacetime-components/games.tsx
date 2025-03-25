@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useSpacetime } from "../..//providers/spacetime-context";
+import { SpotState } from "../../lib/types";
 
 const Games = () => {
   const { games, getUserName } = useSpacetime();
@@ -20,33 +21,75 @@ const Games = () => {
           className="card bg-base-100 shadow hover:shadow-lg transition cursor-pointer"
         >
           <div
-            key={game.id.toString()}
-            className="card bg-base-100 shadow hover:shadow-lg transition cursor-pointer"
+            key={game.id}
+            className="flex items-center gap-4 p-2 border rounded"
           >
-            <div className="card-body">
-              <h2 className="card-title">
+            <MiniBoard board={game.board} boardSize={game.boardSize} />
+            <div>
+              <div className="text-sm font-bold">
+                Game #{game.id.toString()}
+              </div>
+              <div className="text-xs text-gray-500">
                 {getUserName(game.playerBlack)} vs{" "}
                 {game.playerWhite
                   ? getUserName(game.playerWhite)
-                  : "Waiting..."}
-              </h2>
-              <p>
-                Board size: {game.boardSize}x{game.boardSize}
-              </p>
-              <p>Turn: {game.turn}</p>
-              <p>Passes: {game.passes}</p>
-              {game.gameOver ? (
-                <p className="text-success font-bold">
-                  Game Over – Score: {game.finalScoreBlack?.toString() ?? 0}{" "}
-                  (Black) / {game.finalScoreWhite?.toString() ?? 0} (White)
-                </p>
-              ) : (
-                <p className="text-info">In Progress</p>
-              )}
+                  : "Waiting for player..."}
+              </div>
             </div>
           </div>
         </Link>
       ))}
+    </div>
+  );
+};
+
+type MiniBoardProps = {
+  board: string; // serialized JSON
+  boardSize: number;
+};
+
+const MiniBoard: React.FC<MiniBoardProps> = ({ board, boardSize }) => {
+  let parsedBoard: SpotState[] = [];
+  try {
+    parsedBoard = JSON.parse(board);
+  } catch (e) {
+    console.error("Failed to parse board JSON", e);
+    return null;
+  }
+
+  return (
+    <div className="w-24 aspect-square">
+      <div
+        className="grid w-full h-full"
+        style={{
+          gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
+          gridTemplateRows: `repeat(${boardSize}, 1fr)`,
+        }}
+      >
+        {parsedBoard.map((cell, idx) => {
+          let content;
+          if (cell.occupant === "Black") {
+            content = <div className="w-[6px] h-[6px] bg-black rounded-full" />;
+          } else if (cell.occupant === "White") {
+            content = (
+              <div className="w-[6px] h-[6px] bg-white rounded-full border" />
+            );
+          } else {
+            content = (
+              <div className="w-[2px] h-[2px] bg-gray-500 rounded-full" />
+            );
+          }
+
+          return (
+            <div
+              key={idx}
+              className="flex items-center justify-center text-center leading-none"
+            >
+              {content}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

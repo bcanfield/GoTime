@@ -3,6 +3,7 @@ import VersionDropdown from "./version-dropdown";
 import { navItems } from "../lib/sidebar-items";
 import SidebarMenuItem from "./sidebar-nav-item";
 import ProfileSection from "./spacetime-components/profile";
+import appLogo from "/go.svg";
 
 export const Drawer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -69,33 +70,10 @@ const NavBar = () => {
           </span>
           <div className="flex items-center gap-2 lg:hidden">
             <a className="btn btn-ghost flex-0 gap-1 px-2 md:gap-2" href="/">
-              <svg
-                className="h-5 w-5 md:h-6 md:w-6"
-                width="28"
-                height="28"
-                viewBox="0 0 415 415"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect
-                  x="82.5"
-                  y="290"
-                  width="250"
-                  height="125"
-                  rx="62.5"
-                  fill="#1AD1A5"
-                ></rect>
-                <circle
-                  cx="207.5"
-                  cy="135"
-                  r="130"
-                  fill="black"
-                  fill-opacity=".3"
-                ></circle>
-                <circle cx="207.5" cy="135" r="125" fill="white"></circle>
-                <circle cx="207.5" cy="135" r="56" fill="#FF9903"></circle>
-              </svg>
+              <img className="h-5 w-5 md:h-6 md:w-6 rounded-xl" src={appLogo} />
+
               <span className="font-title text-base-content text-lg md:text-xl">
-                daisyUIasdf
+                GoTime
               </span>
             </a>
 
@@ -193,32 +171,10 @@ const DrawerSide = () => {
             aria-label="Homepage"
             className="btn btn-ghost flex-0 px-2"
           >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 415 415"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="82.5"
-                y="290"
-                width="250"
-                height="125"
-                rx="62.5"
-                fill="#1AD1A5"
-              ></rect>
-              <circle
-                cx="207.5"
-                cy="135"
-                r="130"
-                fill="black"
-                fill-opacity=".3"
-              ></circle>
-              <circle cx="207.5" cy="135" r="125" fill="white"></circle>
-              <circle cx="207.5" cy="135" r="56" fill="#FF9903"></circle>
-            </svg>{" "}
+            <img className="size-8 rounded-xl" src={appLogo} />
+
             <div className="font-title inline-flex text-lg md:text-2xl">
-              daisyUII
+              GoTime
             </div>
           </a>
           <VersionDropdown />

@@ -11,11 +11,18 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as RulesImport } from './routes/rules'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 import { Route as GameGameIdImport } from './routes/game/$gameId'
 
 // Create/Update Routes
+
+const RulesRoute = RulesImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AboutRoute = AboutImport.update({
   id: '/about',
@@ -53,6 +60,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutImport
       parentRoute: typeof rootRoute
     }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesImport
+      parentRoute: typeof rootRoute
+    }
     '/game/$gameId': {
       id: '/game/$gameId'
       path: '/game/$gameId'
@@ -68,12 +82,14 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/rules': typeof RulesRoute
   '/game/$gameId': typeof GameGameIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/rules': typeof RulesRoute
   '/game/$gameId': typeof GameGameIdRoute
 }
 
@@ -81,27 +97,30 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/rules': typeof RulesRoute
   '/game/$gameId': typeof GameGameIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/game/$gameId'
+  fullPaths: '/' | '/about' | '/rules' | '/game/$gameId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/game/$gameId'
-  id: '__root__' | '/' | '/about' | '/game/$gameId'
+  to: '/' | '/about' | '/rules' | '/game/$gameId'
+  id: '__root__' | '/' | '/about' | '/rules' | '/game/$gameId'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  RulesRoute: typeof RulesRoute
   GameGameIdRoute: typeof GameGameIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  RulesRoute: RulesRoute,
   GameGameIdRoute: GameGameIdRoute,
 }
 
@@ -117,6 +136,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
+        "/rules",
         "/game/$gameId"
       ]
     },
@@ -125,6 +145,9 @@ export const routeTree = rootRoute
     },
     "/about": {
       "filePath": "about.tsx"
+    },
+    "/rules": {
+      "filePath": "rules.tsx"
     },
     "/game/$gameId": {
       "filePath": "game/$gameId.tsx"

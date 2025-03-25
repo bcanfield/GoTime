@@ -1,16 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { Occupant } from "../../App";
 import { useSpacetime } from "../../providers/spacetime-context";
 import clsx from "clsx";
-
-export type SpotState = {
-  occupant: Occupant;
-  move_number: number | null;
-  marker: string | null;
-  scoring_owner: Occupant | null;
-  scoring_explanation: string | null;
-  playable: boolean;
-};
+import { SpotState } from "../../lib/types";
 
 type Props = {
   gameId: bigint;

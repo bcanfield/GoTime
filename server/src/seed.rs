@@ -14,6 +14,7 @@ fn generate_empty_board(size: u8) -> Vec<SpotState> {
             marker: None,
             scoring_owner: None,
             scoring_explanation: None,
+            playable: true,
         })
         .collect()
 }

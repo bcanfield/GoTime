@@ -69,53 +69,6 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
     currentUser &&
     getUserName(currentTurnPlayer) === getUserName(currentUser);
 
-  // Render board rows. Each cell contains an intersection point.
-  const rows = [];
-  for (let y = 0; y < boardSize; y++) {
-    const cells = [];
-    for (let x = 0; x < boardSize; x++) {
-      const idx = y * boardSize + x;
-      const cell: SpotState = parsedBoard[idx];
-      // Determine what to display:
-      // If a stone is placed, render it; otherwise, render a small dot.
-      let content;
-      if (cell.occupant === "Black") {
-        content = <span className="text-black text-xl">●</span>;
-      } else if (cell.occupant === "White") {
-        content = <span className="text-white text-xl">○</span>;
-      } else {
-        // A small gray dot to denote an intersection.
-        content = <span className="block w-1 h-1 bg-gray-500 rounded-full" />;
-      }
-
-      // Check if this intersection is selectable and/or selected.
-      const isSelected =
-        selectedCell && selectedCell.x === x && selectedCell.y === y;
-
-      const isPlayable = isPlayersTurn && cell.playable;
-      cells.push(
-        <td key={x} className="w-10 h-10 relative">
-          {/* The intersection element */}
-          <div
-            onClick={() => isPlayable && handleIntersectionClick(x, y)}
-            className={clsx(
-              "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full",
-              "w-6 h-6",
-              {
-                "cursor-pointer hover:bg-green-200": isPlayable,
-                "cursor-not-allowed": !isPlayable,
-                "bg-green-400": isSelected,
-              }
-            )}
-          >
-            {content}
-          </div>
-        </td>
-      );
-    }
-    rows.push(<tr key={y}>{cells}</tr>);
-  }
-
   const onPass = () => {
     conn?.reducers.passMove(gameId);
   };
@@ -130,7 +83,7 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
     getUserName(currentTurnPlayer) === getUserName(playerWhite);
 
   return (
-    <div className="max-w-md space-y-4">
+    <div className="space-y-4 w-full max-w-xl mx-auto">
       <div className="flex justify-between w-full">
         <div
           className={`flex flex-col items-center gap-1.5   ${
@@ -163,12 +116,50 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
         </div>
       </div>
 
-      <div className="flex items-center w-full justify-center">
-        <table className="border-collapse">
-          <tbody>{rows}</tbody>
-        </table>
-      </div>
+      <div className="relative aspect-square w-full">
+        <div
+          className="grid absolute inset-0"
+          style={{
+            gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
+            gridTemplateRows: `repeat(${boardSize}, 1fr)`,
+          }}
+        >
+          {parsedBoard.map((cell, idx) => {
+            const x = idx % boardSize;
+            const y = Math.floor(idx / boardSize);
+            const isSelected = selectedCell?.x === x && selectedCell?.y === y;
+            const isPlayable = isPlayersTurn && cell.playable;
 
+            let content;
+            if (cell.occupant === "Black") {
+              content = <div className="w-5 h-5 bg-black rounded-full" />;
+            } else if (cell.occupant === "White") {
+              content = (
+                <div className="w-5 h-5 bg-white rounded-full border border-gray-800" />
+              );
+            } else {
+              content = <div className="w-1 h-1 bg-gray-500 rounded-full" />;
+            }
+
+            return (
+              <div
+                key={`${x}-${y}`}
+                onClick={() => isPlayable && handleIntersectionClick(x, y)}
+                className={clsx(
+                  "flex items-center justify-center aspect-square min-w-0 min-h-0",
+                  {
+                    "cursor-pointer hover:bg-green-200": isPlayable,
+                    "cursor-not-allowed": !isPlayable,
+                    "bg-green-400": isSelected,
+                  }
+                )}
+              >
+                {content}
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {!playerWhite ? (
         <button
           onClick={() => joinGame(game.id)}

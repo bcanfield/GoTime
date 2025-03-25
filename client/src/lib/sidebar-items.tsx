@@ -19,14 +19,14 @@ export const navItems: SidebarMenuItemProps[] = [
     collapsible: true,
 
     renderChild: <Users />,
-    icon: '<svg class="text-blue-500 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="currentColor"><defs><path id="1733501816477-2951362_a" d="M0 0h48v48H0V0z"></path></defs><clipPath id="1733501816477-2951362_b"><use xlink:href="#1733501816477-2951362_a" overflow="visible"></use></clipPath><path clip-path="url(#1733501816477-2951362_b)" d="M40 8H8c-2.21 0-3.98 1.79-3.98 4L4 36c0 2.21 1.79 4 4 4h32c2.21 0 4-1.79 4-4V12c0-2.21-1.79-4-4-4zM17 30h-2.4l-5.1-7v7H7V18h2.5l5 7v-7H17v12zm10-9.49h-5v2.24h5v2.51h-5v2.23h5V30h-8V18h8v2.51zM41 28c0 1.1-.9 2-2 2h-8c-1.1 0-2-.9-2-2V18h2.5v9.01h2.25v-7.02h2.5v7.02h2.25V18H41v10z"></path></g></svg>',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" class="text-blue-500 size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg>',
   },
   {
     name: "Chat",
     collapsible: true,
 
     renderChild: <ChatBox />,
-    icon: '<svg class="text-blue-500 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="currentColor"><defs><path id="1733501816477-2951362_a" d="M0 0h48v48H0V0z"></path></defs><clipPath id="1733501816477-2951362_b"><use xlink:href="#1733501816477-2951362_a" overflow="visible"></use></clipPath><path clip-path="url(#1733501816477-2951362_b)" d="M40 8H8c-2.21 0-3.98 1.79-3.98 4L4 36c0 2.21 1.79 4 4 4h32c2.21 0 4-1.79 4-4V12c0-2.21-1.79-4-4-4zM17 30h-2.4l-5.1-7v7H7V18h2.5l5 7v-7H17v12zm10-9.49h-5v2.24h5v2.51h-5v2.23h5V30h-8V18h8v2.51zM41 28c0 1.1-.9 2-2 2h-8c-1.1 0-2-.9-2-2V18h2.5v9.01h2.25v-7.02h2.5v7.02h2.25V18H41v10z"></path></g></svg>',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" class="text-orange-400 size-5" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" /></svg>',
   },
   {},
   {

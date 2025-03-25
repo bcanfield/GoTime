@@ -13,32 +13,31 @@ const Games = () => {
         </div>
       )}
 
-      {games.map((game) => (
-        <Link
-          to="/game/$gameId"
-          params={{ gameId: game.id.toString() }}
-          key={game.id.toString()}
-          className="card bg-base-100 shadow hover:shadow-lg transition cursor-pointer"
-        >
-          <div
-            key={game.id}
-            className="flex items-center gap-4 p-2 border rounded"
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {games.map((game) => (
+          <Link
+            to="/game/$gameId"
+            params={{ gameId: game.id.toString() }}
+            key={game.id.toString()}
+            className="card bg-base-100  card-border cursor-pointer hover:bg-base-200"
           >
-            <MiniBoard board={game.board} boardSize={game.boardSize} />
-            <div>
-              <div className="text-sm font-bold">
-                Game #{game.id.toString()}
-              </div>
-              <div className="text-xs text-gray-500">
-                {getUserName(game.playerBlack)} vs{" "}
-                {game.playerWhite
-                  ? getUserName(game.playerWhite)
-                  : "Waiting for player..."}
+            <div key={game.id} className="flex items-center gap-4 p-2 ">
+              <MiniBoard board={game.board} boardSize={game.boardSize} />
+              <div>
+                <div className="text-sm font-bold">
+                  Game #{game.id.toString()}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {getUserName(game.playerBlack)} vs{" "}
+                  {game.playerWhite
+                    ? getUserName(game.playerWhite)
+                    : "Waiting for player..."}
+                </div>
               </div>
             </div>
-          </div>
-        </Link>
-      ))}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };

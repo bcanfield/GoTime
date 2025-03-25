@@ -11,10 +11,13 @@ function HomeComponent() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div>
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Welcome to Go Lobby</h1>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+        <h1 className="md:text-2xl text-lg font-bold">Welcome to Go Lobby</h1>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => setShowModal(true)}
+        >
           + Create Game
         </button>
       </div>

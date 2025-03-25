@@ -1,3 +1,4 @@
+use crate::scoring::find_empty_regions;
 use serde::{Deserialize, Serialize};
 use spacetimedb::{table, Identity, Timestamp};
 use std::collections::HashSet;
@@ -54,6 +55,10 @@ pub struct SpotState {
     pub occupant: Occupant,
     pub move_number: Option<u64>,
     pub marker: Option<String>,
+    /// Optional field indicating which player gets the point for this spot.
+    pub scoring_owner: Option<Occupant>,
+    /// Optional explanation for scoring (e.g. "enclosed by Black", "Neutral", etc.)
+    pub scoring_explanation: Option<String>,
 }
 
 /// A Group represents a connected chain of stones of a given color, along with its liberties.
@@ -135,5 +140,46 @@ impl Board {
             result.push((row, col + 1));
         }
         result
+    }
+    /// Annotate each empty spot with scoring metadata based on territory.
+    /// This function updates the `scoring_owner` and `scoring_explanation` fields in-place.
+    /// Only empty regions are annotated because they are the only ones that can be scored.
+    pub fn annotate_for_scoring(&mut self) {
+        // Clear any previous scoring info.
+        for spot in self.spots.iter_mut() {
+            spot.scoring_owner = None;
+            spot.scoring_explanation = None;
+        }
+        log::info!("{}", "In here");
+
+        let regions = find_empty_regions(self);
+        // log number of regions
+        log::info!("Found {} empty regions", regions.len());
+
+        for region in regions {
+            if region.touches_edge {
+                for (r, c) in region.spots {
+                    if let Some(spot) = self.get_mut(r, c) {
+                        spot.scoring_owner = None;
+                        spot.scoring_explanation = Some("Open (touches edge)".to_string());
+                    }
+                }
+            } else if region.border.len() == 1 {
+                let owner = region.border.iter().next().unwrap().clone();
+                for (r, c) in region.spots {
+                    if let Some(spot) = self.get_mut(r, c) {
+                        spot.scoring_owner = Some(owner.clone());
+                        spot.scoring_explanation = Some(format!("Cell enclosed by {:?}", owner));
+                    }
+                }
+            } else {
+                for (r, c) in region.spots {
+                    if let Some(spot) = self.get_mut(r, c) {
+                        spot.scoring_owner = None;
+                        spot.scoring_explanation = Some("Neutral".to_string());
+                    }
+                }
+            }
+        }
     }
 }

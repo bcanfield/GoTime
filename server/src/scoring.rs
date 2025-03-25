@@ -1,4 +1,4 @@
-use crate::models::{Board, EmptyRegion, Group, Occupant, ScoringMethod};
+use crate::models::{Board, EmptyRegion, Game, Group, Occupant, ScoringMethod, SpotState};
 
 use std::collections::{HashSet, VecDeque};
 
@@ -81,7 +81,7 @@ pub fn remove_dead_stones(board: &mut Board) -> Vec<Group> {
 
 /// Find contiguous empty regions using a flood-fill algorithm.
 pub fn find_empty_regions(board: &Board) -> Vec<EmptyRegion> {
-    let mut regions = Vec::new();
+    let mut regions: Vec<EmptyRegion> = Vec::new();
     let mut visited = vec![false; board.spots.len()];
 
     for row in 0..board.board_size {
@@ -135,7 +135,7 @@ pub fn find_empty_regions(board: &Board) -> Vec<EmptyRegion> {
 /// For each empty region, if all adjacent stones are of a single color,
 /// the whole region is assigned as that color’s territory.
 pub fn determine_territory(board: &Board) -> (u64, u64) {
-    let regions = find_empty_regions(board);
+    let regions: Vec<EmptyRegion> = find_empty_regions(board);
     let mut black_territory = 0;
     let mut white_territory = 0;
     for region in regions {
@@ -154,6 +154,31 @@ pub fn determine_territory(board: &Board) -> (u64, u64) {
         }
     }
     (black_territory, white_territory)
+}
+
+/// Perform scoring analysis on a game.
+/// This function deserializes the board, runs in-place annotation,
+/// calculates the current score, and then updates the game accordingly.
+pub fn analyze_game(mut game: Game) -> Game {
+    // Deserialize the board from JSON into a Vec<SpotState>
+    let board_vec: Vec<SpotState> =
+        serde_json::from_str(&game.board).expect("Failed to deserialize board");
+    let mut board_obj = crate::models::Board::new(board_vec, game.board_size);
+
+    // Run in-place annotation to update scoring fields on each spot.
+    board_obj.annotate_for_scoring();
+
+    // Calculate the score using our existing function (using Area scoring here).
+    let (black_score, white_score) = calculate_score(&board_obj, ScoringMethod::Area, 6.5);
+
+    // Update game fields with the computed score.
+    game.final_score_black = Some(black_score);
+    game.final_score_white = Some(white_score);
+
+    // Re-serialize the annotated board so the client receives detailed insights.
+    game.board = serde_json::to_string(&board_obj.spots).expect("Failed to serialize board");
+
+    game
 }
 
 /// Calculate scores for Black and White.

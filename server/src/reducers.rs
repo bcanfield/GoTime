@@ -1,6 +1,8 @@
 use crate::models::{game, message, user};
 use crate::models::{Game, Message, Occupant, ScoringMethod, SpotState, User};
-use crate::scoring::calculate_score;
+use crate::scoring::{analyze_game, calculate_score};
+use crate::seed::seed_sample_games;
+
 use crate::utils::{apply_move_to_board, coord_to_index};
 use serde_json;
 use spacetimedb::{reducer, ReducerContext, Table};
@@ -104,6 +106,8 @@ pub fn create_game(
             occupant: Occupant::Empty,
             move_number: None,
             marker: None,
+            scoring_owner: None,
+            scoring_explanation: None,
         })
         .collect();
     let handicap = handicap.unwrap_or(0);
@@ -247,6 +251,16 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
     } else {
         "B".to_string()
     };
+
+    game = analyze_game(game);
     ctx.db.game().id().update(game);
+    Ok(())
+}
+
+#[reducer]
+pub fn seed(ctx: &ReducerContext) -> Result<(), String> {
+    log::info!("Seeding sample games");
+    seed_sample_games(ctx);
+    log::info!("Seeding completed");
     Ok(())
 }

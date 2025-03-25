@@ -24,6 +24,7 @@ export function useGame(conn: DbConnection | null, gameId: bigint) {
 
     // Handler to update game state on insert or update.
     const handleGameEvent = (_ctx: EventContext, newGame: Game) => {
+      console.log({ newGame });
       if (newGame.id === gameId) {
         setGame(newGame);
       }

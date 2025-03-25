@@ -12,6 +12,8 @@ fn create_board_from_vec(vec: Vec<Occupant>, board_size: u8) -> Board {
             occupant: occ,
             move_number: None,
             marker: None,
+            scoring_owner: None,
+            scoring_explanation: None,
         })
         .collect();
     Board::new(spots, board_size)

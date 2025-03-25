@@ -1,6 +1,7 @@
 pub mod models;
 pub mod reducers;
 pub mod scoring;
+pub mod seed;
 
 pub mod utils;
 

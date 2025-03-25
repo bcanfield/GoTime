@@ -132,13 +132,15 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
 
             let content;
             if (cell.occupant === "Black") {
-              content = <div className="w-5 h-5 bg-black rounded-full" />;
+              content = <div className="w-4 h-4 bg-black rounded-full" />;
             } else if (cell.occupant === "White") {
               content = (
-                <div className="w-5 h-5 bg-white rounded-full border border-gray-800" />
+                <div className="w-4 h-4 bg-white rounded-full border border-gray-800" />
               );
             } else {
-              content = <div className="w-1 h-1 bg-gray-500 rounded-full" />;
+              content = (
+                <div className="w-[2px] h-[2px] bg-gray-500 rounded-full" />
+              );
             }
 
             return (

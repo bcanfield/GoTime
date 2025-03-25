@@ -57,7 +57,7 @@ export default function GameCreationFormModal({
         >
           <form.Field name="boardSize">
             {(field) => (
-              <label className="form-control w-full">
+              <label className="form-control w-full space-x-2">
                 <span className="label-text">Board Size</span>
                 <select
                   id={field.name}

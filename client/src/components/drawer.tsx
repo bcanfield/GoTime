@@ -225,7 +225,7 @@ const DrawerSide = () => {
         </div>
         <div className="h-4"></div>
 
-        <ul className="menu w-full px-4 py-0">
+        <ul className="menu w-full px-4 py-0 space-y-2">
           <ProfileSection />
           {navItems.map((item, index) => (
             <SidebarMenuItem key={index} {...item} />

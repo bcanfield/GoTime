@@ -3,11 +3,13 @@ import { Occupant } from "../../App";
 import { useSpacetime } from "../../providers/spacetime-context";
 import clsx from "clsx";
 
-// todo: import this from the module bindings
 export type SpotState = {
   occupant: Occupant;
   move_number: number | null;
   marker: string | null;
+  scoring_owner: Occupant | null;
+  scoring_explanation: string | null;
+  playable: boolean;
 };
 
 type Props = {
@@ -96,21 +98,21 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
       }
 
       // Check if this intersection is selectable and/or selected.
-      const selectable = isPlayersTurn && cell.occupant === "Empty";
       const isSelected =
         selectedCell && selectedCell.x === x && selectedCell.y === y;
 
+      const isPlayable = isPlayersTurn && cell.playable;
       cells.push(
         <td key={x} className="w-10 h-10 relative">
           {/* The intersection element */}
           <div
-            onClick={() => handleIntersectionClick(x, y)}
+            onClick={() => isPlayable && handleIntersectionClick(x, y)}
             className={clsx(
               "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full",
               "w-6 h-6",
               {
-                "cursor-pointer hover:bg-green-200": selectable,
-                "cursor-not-allowed": !selectable,
+                "cursor-pointer hover:bg-green-200": isPlayable,
+                "cursor-not-allowed": !isPlayable,
                 "bg-green-400": isSelected,
               }
             )}
@@ -147,7 +149,9 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
           <div className={`badge badge-lg badge-neutral`}>Black</div>
           <div className="text-sm">{getUserName(playerBlack)}</div>
           {playerBlacksTurn && (
-            <span className="badge badge-primary">Your Turn</span>
+            <span className="badge badge-primary">
+              {isPlayersTurn ? "Your" : `Opponent's`} Turn
+            </span>
           )}
         </div>
 
@@ -161,7 +165,9 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
             {playerWhite ? getUserName(playerWhite) : "Waiting..."}
           </div>
           {playerWhitesTurn && (
-            <span className="badge badge-primary">Your Turn</span>
+            <span className="badge badge-primary">
+              {isPlayersTurn ? "Your" : `Opponent's`} Turn
+            </span>
           )}
         </div>
       </div>

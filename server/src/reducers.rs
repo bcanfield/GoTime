@@ -108,6 +108,7 @@ pub fn create_game(
             marker: None,
             scoring_owner: None,
             scoring_explanation: None,
+            playable: true,
         })
         .collect();
     let handicap = handicap.unwrap_or(0);
@@ -253,6 +254,7 @@ pub fn place_stone(ctx: &ReducerContext, game_id: u64, x: u8, y: u8) -> Result<(
     };
 
     game = analyze_game(game);
+
     ctx.db.game().id().update(game);
     Ok(())
 }

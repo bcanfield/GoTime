@@ -163,19 +163,20 @@ pub fn analyze_game(mut game: Game) -> Game {
     // Deserialize the board from JSON into a Vec<SpotState>
     let board_vec: Vec<SpotState> =
         serde_json::from_str(&game.board).expect("Failed to deserialize board");
-    let mut board_obj = crate::models::Board::new(board_vec, game.board_size);
-
-    // Run in-place annotation to update scoring fields on each spot.
+    let mut board_obj = Board::new(board_vec, game.board_size);
+    // Run our in-place scoring annotation.
     board_obj.annotate_for_scoring();
-
-    // Calculate the score using our existing function (using Area scoring here).
+    // Determine playability based on whose turn is next.
+    let current_turn = match game.turn.as_str() {
+        "B" => Occupant::Black,
+        "W" => Occupant::White,
+        _ => panic!("Invalid turn value"),
+    };
+    board_obj.annotate_playability(current_turn);
     let (black_score, white_score) = calculate_score(&board_obj, ScoringMethod::Area, 6.5);
-
-    // Update game fields with the computed score.
     game.final_score_black = Some(black_score);
     game.final_score_white = Some(white_score);
-
-    // Re-serialize the annotated board so the client receives detailed insights.
+    // Re-serialize the annotated board so the client receives insights.
     game.board = serde_json::to_string(&board_obj.spots).expect("Failed to serialize board");
 
     game

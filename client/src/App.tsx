@@ -23,6 +23,7 @@ export type SpotState = {
   marker: string | null;
   scoring_owner: Occupant | null;
   scoring_explanation: string | null;
+  playable: boolean;
 };
 
 function useMessages(conn: DbConnection | null): Message[] {

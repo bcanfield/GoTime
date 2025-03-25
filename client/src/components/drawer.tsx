@@ -68,7 +68,7 @@ const NavBar = () => {
             </label>
           </span>
           <div className="flex items-center gap-2 lg:hidden">
-            <a className="btn btn-ghost flex-0 gap-1 px-2 md:gap-2">
+            <a className="btn btn-ghost flex-0 gap-1 px-2 md:gap-2" href="/">
               <svg
                 className="h-5 w-5 md:h-6 md:w-6"
                 width="28"
@@ -95,7 +95,7 @@ const NavBar = () => {
                 <circle cx="207.5" cy="135" r="56" fill="#FF9903"></circle>
               </svg>
               <span className="font-title text-base-content text-lg md:text-xl">
-                daisyUI
+                daisyUIasdf
               </span>
             </a>
 

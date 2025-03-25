@@ -42,6 +42,7 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
   let parsedBoard: SpotState[] = [];
   try {
     parsedBoard = JSON.parse(board);
+    console.log({ parsedBoard });
   } catch (e) {
     console.error("Error parsing board:", e);
   }
@@ -85,7 +86,6 @@ const GameBoard: React.FC<Props> = ({ gameId }) => {
       // Determine what to display:
       // If a stone is placed, render it; otherwise, render a small dot.
       let content;
-      console.log({ cell });
       if (cell.occupant === "Black") {
         content = <span className="text-black text-xl">●</span>;
       } else if (cell.occupant === "White") {

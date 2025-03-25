@@ -1,5 +1,3 @@
-import { Drawer, DrawerButton } from "./components/drawer";
-
 function NewApp() {
   return (
     <div>
@@ -18,18 +16,6 @@ function NewApp() {
         </div>
       </div>
     </div>
-
-    // <div className="flex min-h-dvh bg-base-100">
-    //   <div className="mx-auto max-w-6xl border w-full">
-    //     <nav className="h-12 bg-green-500 flex items-center">
-    //       <DrawerButton />
-    //     </nav>
-
-    //     <Drawer>
-    //       <span>Main</span>
-    //     </Drawer>
-    //   </div>
-    // </div>
   );
 }
 

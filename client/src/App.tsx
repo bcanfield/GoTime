@@ -21,6 +21,8 @@ export type SpotState = {
   occupant: Occupant;
   move_number: number | null;
   marker: string | null;
+  scoring_owner: Occupant | null;
+  scoring_explanation: string | null;
 };
 
 function useMessages(conn: DbConnection | null): Message[] {

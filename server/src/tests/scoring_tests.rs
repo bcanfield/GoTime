@@ -1,24 +1,9 @@
-use crate::models::{Board, Occupant, ScoringMethod, SpotState};
+use crate::models::{Occupant, ScoringMethod};
 use crate::scoring::{
     calculate_score, determine_territory, find_empty_regions, find_groups, remove_dead_stones,
 };
+use crate::tests::test_utils::create_board_from_vec;
 use std::collections::HashSet;
-
-// Helper: create a Board from a vector of Occupant values.
-fn create_board_from_vec(vec: Vec<Occupant>, board_size: u8) -> Board {
-    let spots: Vec<SpotState> = vec
-        .into_iter()
-        .map(|occ| SpotState {
-            occupant: occ,
-            move_number: None,
-            marker: None,
-            scoring_owner: None,
-            scoring_explanation: None,
-            playable: true,
-        })
-        .collect();
-    Board::new(spots, board_size)
-}
 
 #[test]
 fn test_indexing() {

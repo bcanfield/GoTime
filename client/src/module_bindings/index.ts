@@ -32,6 +32,8 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
+import { ClientConnected } from "./client_connected_reducer.ts";
+export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
 import { CreateGame } from "./create_game_reducer.ts";
@@ -42,6 +44,8 @@ import { PassMove } from "./pass_move_reducer.ts";
 export { PassMove };
 import { PlaceStone } from "./place_stone_reducer.ts";
 export { PlaceStone };
+import { Seed } from "./seed_reducer.ts";
+export { Seed };
 import { SendMessage } from "./send_message_reducer.ts";
 export { SendMessage };
 import { SetName } from "./set_name_reducer.ts";
@@ -81,6 +85,10 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
+    client_connected: {
+      reducerName: "client_connected",
+      argsType: ClientConnected.getTypeScriptAlgebraicType(),
+    },
     client_disconnected: {
       reducerName: "client_disconnected",
       argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
@@ -100,6 +108,10 @@ const REMOTE_MODULE = {
     place_stone: {
       reducerName: "place_stone",
       argsType: PlaceStone.getTypeScriptAlgebraicType(),
+    },
+    seed: {
+      reducerName: "seed",
+      argsType: Seed.getTypeScriptAlgebraicType(),
     },
     send_message: {
       reducerName: "send_message",
@@ -136,17 +148,35 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
+| { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "CreateGame", args: CreateGame }
 | { name: "JoinGame", args: JoinGame }
 | { name: "PassMove", args: PassMove }
 | { name: "PlaceStone", args: PlaceStone }
+| { name: "Seed", args: Seed }
 | { name: "SendMessage", args: SendMessage }
 | { name: "SetName", args: SetName }
 ;
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
+
+  clientConnected() {
+    this.connection.callReducer("client_connected", new Uint8Array(0), this.setCallReducerFlags.clientConnectedFlags);
+  }
+
+  onClientConnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("client_connected", callback);
+  }
+
+  removeOnClientConnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("client_connected", callback);
+  }
+
+  clientDisconnected() {
+    this.connection.callReducer("client_disconnected", new Uint8Array(0), this.setCallReducerFlags.clientDisconnectedFlags);
+  }
 
   onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("client_disconnected", callback);
@@ -220,6 +250,18 @@ export class RemoteReducers {
     this.connection.offReducer("place_stone", callback);
   }
 
+  seed() {
+    this.connection.callReducer("seed", new Uint8Array(0), this.setCallReducerFlags.seedFlags);
+  }
+
+  onSeed(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("seed", callback);
+  }
+
+  removeOnSeed(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("seed", callback);
+  }
+
   sendMessage(text: string) {
     const __args = { text };
     let __writer = new BinaryWriter(1024);
@@ -255,6 +297,16 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  clientConnectedFlags: CallReducerFlags = 'FullUpdate';
+  clientConnected(flags: CallReducerFlags) {
+    this.clientConnectedFlags = flags;
+  }
+
+  clientDisconnectedFlags: CallReducerFlags = 'FullUpdate';
+  clientDisconnected(flags: CallReducerFlags) {
+    this.clientDisconnectedFlags = flags;
+  }
+
   createGameFlags: CallReducerFlags = 'FullUpdate';
   createGame(flags: CallReducerFlags) {
     this.createGameFlags = flags;
@@ -273,6 +325,11 @@ export class SetReducerFlags {
   placeStoneFlags: CallReducerFlags = 'FullUpdate';
   placeStone(flags: CallReducerFlags) {
     this.placeStoneFlags = flags;
+  }
+
+  seedFlags: CallReducerFlags = 'FullUpdate';
+  seed(flags: CallReducerFlags) {
+    this.seedFlags = flags;
   }
 
   sendMessageFlags: CallReducerFlags = 'FullUpdate';

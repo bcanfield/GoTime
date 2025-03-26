@@ -1,16 +1,38 @@
-# SpacetimeDB Demo
+<img src="client/public/go.svg" width="100" height="100"/>
 
-This project demonstrates a demo using SpacetimeDB. The client is written in **React** and the server is written in **Rust**.
 
-## Prerequisites
+# GoTime
+ 
+⚠️⚠️ README & Public demo in progress ⚠️⚠️
 
-- **SpacetimeDB Documentation:** For more details on SpacetimeDB, refer to the [SpacetimeDB Docs](https://docs.spacetimedb.com).
-- **Rust:**  
-  Install Rust if you haven't already (Note: This might not be necessary if you're running everything in a Docker container).  
-  You can install Rust from the [official site](https://www.rust-lang.org/tools/install).  
-  Ensure that Rust is added to your `PATH` (e.g., `export PATH="$PATH:$HOME/.cargo/bin"`).
 
-## Setup
+
+
+
+**GoTime** is a proof-of-concept multiplayer game of [Go](https://en.wikipedia.org/wiki/Go_(game)) built using [SpacetimeDB](https://spacetimedb.com/).
+
+Thie repository contains a client app written in [React](https://react.dev/) and a server app written in [Rust](https://www.rust-lang.org/).
+
+---
+
+## Quick Overview
+
+- **Fast Multiplayer**  
+  Built with SpacetimeDB for rapid state updates and low-latency interactions.
+
+- **Real-Time Game Analysis:**  
+  Dynamic board analysis, scoring (area & territory methods), move legality checks, etc are performed on every move.
+
+- **Game Rules:**  
+  Our Game rules write-up can be found at [GO_RULES.md](/GO_RULES.md)
+
+  For complete instructions on how to play Go, we recommend going to one of the more official sources online.
+
+
+---
+
+## Development
+
 
 ### Starting the Database
 
@@ -61,3 +83,6 @@ To view logs and verify that the reducer was called:
 ```bash
 npm run spacetime -- logs quickstart-chat
 ```
+
+
+

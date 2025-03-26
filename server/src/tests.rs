@@ -9,6 +9,9 @@ fn empty_board(size: usize) -> Vec<SpotState> {
             occupant: Occupant::Empty,
             move_number: None,
             marker: None,
+            playable: true,
+            scoring_owner: None,
+            scoring_explanation: None,
         })
         .collect()
 }
@@ -157,6 +160,9 @@ fn test_handicap_creation() {
             occupant: Occupant::Empty,
             move_number: None,
             marker: None,
+            playable: true,
+            scoring_owner: None,
+            scoring_explanation: None,
         })
         .collect();
     let handicap_positions = vec![(2, 2), (6, 6), (2, 6), (6, 2), (4, 4)];

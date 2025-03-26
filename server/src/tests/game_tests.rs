@@ -1,25 +1,12 @@
 use crate::models::{Occupant, SpotState};
+use crate::tests::test_utils::create_empty_board;
 use crate::utils::{apply_move_to_board, coord_to_index};
-
-/// Helper: Create an empty board as a Vec<SpotState>.
-fn empty_board(size: usize) -> Vec<SpotState> {
-    let num_spots = size * size;
-    (0..num_spots)
-        .map(|_| SpotState {
-            occupant: Occupant::Empty,
-            move_number: None,
-            marker: None,
-            playable: true,
-            scoring_owner: None,
-            scoring_explanation: None,
-        })
-        .collect()
-}
+use serde_json;
 
 #[test]
 fn test_legal_move() {
     let size = 9;
-    let board = empty_board(size);
+    let board = create_empty_board(size as u8).spots;
     let timestamp = 1000;
 
     let (new_board, new_board_str) =
@@ -37,7 +24,7 @@ fn test_legal_move() {
 #[test]
 fn test_move_on_occupied() {
     let size = 9;
-    let board = empty_board(size);
+    let board = create_empty_board(size as u8).spots;
     let timestamp = 1000;
     let (board, prev) =
         apply_move_to_board(board, size, Occupant::Black, 2, 2, None, timestamp).unwrap();
@@ -48,7 +35,7 @@ fn test_move_on_occupied() {
 #[test]
 fn test_capture() {
     let size = 5;
-    let mut board = empty_board(size);
+    let mut board = create_empty_board(size as u8).spots;
     let ts = 1000;
     board = apply_move_to_board(board, size, Occupant::White, 2, 2, None, ts)
         .unwrap()
@@ -76,7 +63,7 @@ fn test_capture() {
 #[test]
 fn test_suicide() {
     let size = 5;
-    let mut board = empty_board(size);
+    let mut board = create_empty_board(size as u8).spots;
     let ts = 1000;
     board = apply_move_to_board(board, size, Occupant::Black, 1, 2, None, ts)
         .unwrap()
@@ -97,7 +84,7 @@ fn test_suicide() {
 #[test]
 fn test_ko_rule() {
     let size = 5;
-    let mut board = empty_board(size);
+    let mut board = create_empty_board(size as u8).spots;
     let ts = 1000;
     board = apply_move_to_board(board, size, Occupant::White, 2, 2, None, ts)
         .unwrap()
@@ -129,26 +116,6 @@ fn test_ko_rule() {
         "Ko rule should prevent immediate recapture"
     );
 }
-
-// #[test]
-// fn test_pass_and_game_over() {
-//     let size = 5;
-//     let board = empty_board(size);
-//     let mut board = board;
-//     let ts = 1000;
-//     for y in 0..3 {
-//         for x in 0..3 {
-//             let idx = coord_to_index(x, y, size);
-//             board[idx].occupant = Occupant::Black;
-//             board[idx].move_number = Some(ts);
-//         }
-//     }
-//     let (score_black, score_white) = evaluate_game(&board, size);
-//     assert!(
-//         score_black > score_white,
-//         "Black should have a higher score"
-//     );
-// }
 
 #[test]
 fn test_handicap_creation() {

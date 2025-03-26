@@ -1,75 +1,5 @@
+use super::spot::{Occupant, SpotState};
 use crate::scoring::{find_empty_regions, find_groups};
-use serde::{Deserialize, Serialize};
-use spacetimedb::{table, Identity, Timestamp};
-use std::collections::HashSet;
-
-#[table(name = user, public)]
-pub struct User {
-    #[primary_key]
-    pub identity: Identity,
-    pub name: Option<String>,
-    pub online: bool,
-}
-
-#[table(name = message, public)]
-pub struct Message {
-    pub sender: Identity,
-    pub sent: Timestamp,
-    pub text: String,
-}
-
-#[table(name = game, public)]
-pub struct Game {
-    #[primary_key]
-    pub id: u64,
-    pub player_black: Identity,
-    pub player_white: Option<Identity>,
-    pub board: String, // JSON serialized Vec<SpotState>
-    pub turn: String,  // "B" for Black or "W" for White
-    pub passes: u8,
-    pub board_size: u8,
-    pub previous_board: Option<String>, // For simple ko checking
-    pub game_over: bool,
-    pub final_score_black: Option<f32>,
-    pub final_score_white: Option<f32>,
-}
-
-impl Game {
-    /// Convert the JSON-serialized board into a Board struct.
-    pub fn as_board(&self) -> Result<Board, serde_json::Error> {
-        let spots: Vec<SpotState> = serde_json::from_str(&self.board)?;
-        Ok(Board::new(spots, self.board_size))
-    }
-}
-
-/// The Occupant enum represents what is on a given board spot.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Occupant {
-    Empty,
-    Black,
-    White,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SpotState {
-    pub occupant: Occupant,
-    pub move_number: Option<u64>,
-    pub marker: Option<String>,
-    pub playable: bool, // true if the spot is legal to play
-
-    /// Optional field indicating which player gets the point for this spot.
-    pub scoring_owner: Option<Occupant>,
-    /// Optional explanation for scoring (e.g. "enclosed by Black", "Neutral", etc.)
-    pub scoring_explanation: Option<String>,
-}
-
-/// A Group represents a connected chain of stones of a given color, along with its liberties.
-#[derive(Debug)]
-pub struct Group {
-    pub occupant: Occupant,
-    pub stones: Vec<(u8, u8)>,
-    pub liberties: HashSet<(u8, u8)>,
-}
 
 /// The Board type wraps a vector of SpotState with its board size.
 /// We assume the board is stored in row-major order.
@@ -77,21 +7,6 @@ pub struct Group {
 pub struct Board {
     pub board_size: u8,
     pub spots: Vec<SpotState>,
-}
-
-/// Represents a contiguous empty region (dame) along with the colors of adjacent stones.
-#[derive(Debug)]
-pub struct EmptyRegion {
-    pub spots: Vec<(u8, u8)>,
-    pub border: HashSet<Occupant>, // Colors of adjacent stones.
-    pub touches_edge: bool,
-}
-
-/// An enum to choose between scoring methods.
-#[derive(Debug)]
-pub enum ScoringMethod {
-    Area,      // Area scoring: stones on board + enclosed territory.
-    Territory, // Territory scoring: enclosed territory (and captured stones, if tracked).
 }
 
 impl Board {

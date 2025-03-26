@@ -1,93 +1,13 @@
-use crate::models::{game, message, user};
-use crate::models::{Game, Message, Occupant, ScoringMethod, SpotState, User};
-use crate::scoring::{analyze_game, calculate_score};
+use crate::models::game::game;
+use crate::models::{Game, Occupant, SpotState};
+use crate::scoring::analyze_game;
 use crate::seed::seed_sample_games;
-
 use crate::utils::{apply_move_to_board, coord_to_index};
 use serde_json;
 use spacetimedb::{reducer, ReducerContext, Table};
 use std::convert::TryInto;
 
 const DEFAULT_BOARD_SIZE: u8 = 9;
-
-fn validate_message(text: String) -> Result<String, String> {
-    if text.is_empty() {
-        Err("Messages must not be empty".to_string())
-    } else {
-        Ok(text)
-    }
-}
-
-#[reducer]
-pub fn send_message(ctx: &ReducerContext, text: String) -> Result<(), String> {
-    let text = validate_message(text)?;
-    log::info!("{}", text);
-    ctx.db.message().insert(Message {
-        sender: ctx.sender,
-        text,
-        sent: ctx.timestamp,
-    });
-    Ok(())
-}
-
-fn validate_name(name: String) -> Result<String, String> {
-    if name.is_empty() {
-        Err("Names must not be empty".to_string())
-    } else {
-        Ok(name)
-    }
-}
-
-#[reducer]
-pub fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let name = validate_name(name)?;
-    if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        ctx.db.user().identity().update(User {
-            name: Some(name),
-            ..user
-        });
-        Ok(())
-    } else {
-        Err("Cannot set name for unknown user".to_string())
-    }
-}
-
-#[reducer(client_connected)]
-pub fn client_connected(ctx: &ReducerContext) {
-    log::info!("ADASDASD existing user {:?}", ctx.sender);
-
-    if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        log::info!("Connected existing user {:?}", ctx.sender);
-
-        ctx.db.user().identity().update(User {
-            online: true,
-            ..user
-        });
-    } else {
-        log::info!("Created user {:?}", ctx.sender);
-
-        ctx.db.user().insert(User {
-            name: None,
-            identity: ctx.sender,
-            online: true,
-        });
-    }
-}
-
-#[reducer(client_disconnected)]
-pub fn client_disconnected(ctx: &ReducerContext) {
-    if let Some(user) = ctx.db.user().identity().find(ctx.sender) {
-        ctx.db.user().identity().update(User {
-            online: false,
-            ..user
-        });
-    } else {
-        log::warn!(
-            "Disconnect event for unknown user with identity {:?}",
-            ctx.sender
-        );
-    }
-}
 
 #[reducer]
 pub fn create_game(
@@ -181,10 +101,6 @@ pub fn pass_move(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
     }
     game.passes += 1;
     if game.passes >= 2 {
-        let game_board = game.as_board().unwrap();
-        let (black_score, white_score) = calculate_score(&game_board, ScoringMethod::Area, 6.5);
-        game.final_score_black = Some(black_score);
-        game.final_score_white = Some(white_score);
         game.game_over = true;
     } else {
         game.turn = if game.turn == "B" {
@@ -193,6 +109,10 @@ pub fn pass_move(ctx: &ReducerContext, game_id: u64) -> Result<(), String> {
             "B".to_string()
         };
     }
+
+    // Analyze the game and update scores
+    game = analyze_game(game);
+
     ctx.db.game().id().update(game);
     Ok(())
 }

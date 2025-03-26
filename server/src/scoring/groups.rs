@@ -1,8 +1,17 @@
 use crate::models::{Board, Group, Occupant};
 use std::collections::HashSet;
 
-/// Find all stone groups (i.e. connected components) on the board.
-/// Empty spots are skipped.
+/// Finds all stone groups (connected components of the same color) on the board.
+///
+/// This function uses a depth-first search algorithm to identify all groups of
+/// connected stones on the board. For each group, it also computes the set of
+/// liberties (empty adjacent points).
+///
+/// # Arguments
+/// * `board` - The game board to analyze
+///
+/// # Returns
+/// A vector of Group objects, each representing a connected set of stones
 pub fn find_groups(board: &Board) -> Vec<Group> {
     let mut groups = Vec::new();
     let mut visited = vec![false; board.spots.len()];
@@ -13,58 +22,76 @@ pub fn find_groups(board: &Board) -> Vec<Group> {
             if visited[idx] {
                 continue;
             }
+            
             let spot = &board.spots[idx];
             match spot.occupant {
                 Occupant::Empty => {
-                    visited[idx] = true; // skip empties
+                    visited[idx] = true; // Mark empty spots as visited but don't create groups for them
                 }
-                ref occ @ Occupant::Black | ref occ @ Occupant::White => {
+                ref occ @ (Occupant::Black | Occupant::White) => {
+                    // Initialize a new group
                     let mut group = Group {
                         occupant: occ.clone(),
                         stones: Vec::new(),
                         liberties: HashSet::new(),
                     };
+                    
+                    // Use depth-first search to find all connected stones
                     let mut stack = vec![(row, col)];
                     while let Some((r, c)) = stack.pop() {
                         let i = board.index(r, c);
                         if visited[i] {
                             continue;
                         }
+                        
                         visited[i] = true;
                         let current = &board.spots[i];
+                        
                         if current.occupant == *occ {
                             group.stones.push((r, c));
+                            
                             // Check each neighbor
                             for (nr, nc) in board.neighbors(r, c) {
                                 let neighbor = board.get(nr, nc).unwrap();
+                                
                                 if neighbor.occupant == *occ && !visited[board.index(nr, nc)] {
+                                    // Same color, add to stack to process later
                                     stack.push((nr, nc));
                                 } else if neighbor.occupant == Occupant::Empty {
+                                    // Empty space, add to liberties
                                     group.liberties.insert((nr, nc));
                                 }
+                                // Other color stones are ignored
                             }
                         }
                     }
+                    
                     groups.push(group);
                 }
             }
         }
     }
+    
     groups
 }
 
-/// Remove dead stones from the board.
-/// A stone group with zero liberties is considered dead and is removed (set to Empty).
-/// Returns a vector of removed (dead) groups.
+/// Removes dead stones (groups with zero liberties) from the board.
+///
+/// In Go, a group with no liberties is considered "dead" and is removed from the board.
+/// This is a key mechanism of capturing stones in the game.
+///
+/// # Arguments
+/// * `board` - The game board to modify
+///
+/// # Returns
+/// A vector of the removed groups
 pub fn remove_dead_stones(board: &mut Board) -> Vec<Group> {
     let groups = find_groups(board);
     let mut removed_groups = Vec::new();
+    
     for group in groups {
-        if group.liberties.is_empty()
-            && group.stones.iter().all(|&(r, c)| {
-                r != 0 && r != board.board_size - 1 && c != 0 && c != board.board_size - 1
-            })
-        {
+        // A group is dead if it has no liberties
+        if group.liberties.is_empty() {
             for (r, c) in &group.stones {
                 if let Some(spot) = board.get_mut(*r, *c) {
                     spot.occupant = Occupant::Empty;
@@ -75,5 +102,6 @@ pub fn remove_dead_stones(board: &mut Board) -> Vec<Group> {
             removed_groups.push(group);
         }
     }
+    
     removed_groups
 }

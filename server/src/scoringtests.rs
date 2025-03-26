@@ -14,6 +14,7 @@ fn create_board_from_vec(vec: Vec<Occupant>, board_size: u8) -> Board {
             marker: None,
             scoring_owner: None,
             scoring_explanation: None,
+            playable: true,
         })
         .collect();
     Board::new(spots, board_size)
@@ -582,8 +583,6 @@ fn test_various_board_sizes() {
 fn test_pre_removed_dead_stones() {
     let board_size = 3;
     let total = (board_size as usize).pow(2);
-    let mut vec = vec![Occupant::White; total];
-    let total = (board_size as usize).pow(2);
     let mut vec = vec![Occupant::White; total]; // no extra mut removal here if needed
                                                 // Compute index for (1,1): index = 1 * board_size + 1.
     let center_index = 1 * (board_size as usize) + 1;
@@ -614,7 +613,7 @@ fn test_no_false_territory_assignment() {
     let board_size = 3;
     let total = (board_size as usize).pow(2);
     // Start with an entirely empty board.
-    let mut vec = vec![Occupant::Empty; total];
+    let vec = vec![Occupant::Empty; total];
     // Place a Black stone at (0,0) and a White stone at (0,2).
     let mut board_vec = vec.clone();
     board_vec[0] = Occupant::Black; // (0,0)

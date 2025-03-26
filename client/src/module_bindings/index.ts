@@ -44,6 +44,8 @@ import { PassMove } from "./pass_move_reducer.ts";
 export { PassMove };
 import { PlaceStone } from "./place_stone_reducer.ts";
 export { PlaceStone };
+import { Seed } from "./seed_reducer.ts";
+export { Seed };
 import { SendMessage } from "./send_message_reducer.ts";
 export { SendMessage };
 import { SetName } from "./set_name_reducer.ts";
@@ -107,6 +109,10 @@ const REMOTE_MODULE = {
       reducerName: "place_stone",
       argsType: PlaceStone.getTypeScriptAlgebraicType(),
     },
+    seed: {
+      reducerName: "seed",
+      argsType: Seed.getTypeScriptAlgebraicType(),
+    },
     send_message: {
       reducerName: "send_message",
       argsType: SendMessage.getTypeScriptAlgebraicType(),
@@ -148,6 +154,7 @@ export type Reducer = never
 | { name: "JoinGame", args: JoinGame }
 | { name: "PassMove", args: PassMove }
 | { name: "PlaceStone", args: PlaceStone }
+| { name: "Seed", args: Seed }
 | { name: "SendMessage", args: SendMessage }
 | { name: "SetName", args: SetName }
 ;
@@ -155,12 +162,20 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
+  clientConnected() {
+    this.connection.callReducer("client_connected", new Uint8Array(0), this.setCallReducerFlags.clientConnectedFlags);
+  }
+
   onClientConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("client_connected", callback);
   }
 
   removeOnClientConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.offReducer("client_connected", callback);
+  }
+
+  clientDisconnected() {
+    this.connection.callReducer("client_disconnected", new Uint8Array(0), this.setCallReducerFlags.clientDisconnectedFlags);
   }
 
   onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
@@ -235,6 +250,18 @@ export class RemoteReducers {
     this.connection.offReducer("place_stone", callback);
   }
 
+  seed() {
+    this.connection.callReducer("seed", new Uint8Array(0), this.setCallReducerFlags.seedFlags);
+  }
+
+  onSeed(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("seed", callback);
+  }
+
+  removeOnSeed(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("seed", callback);
+  }
+
   sendMessage(text: string) {
     const __args = { text };
     let __writer = new BinaryWriter(1024);
@@ -270,6 +297,16 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  clientConnectedFlags: CallReducerFlags = 'FullUpdate';
+  clientConnected(flags: CallReducerFlags) {
+    this.clientConnectedFlags = flags;
+  }
+
+  clientDisconnectedFlags: CallReducerFlags = 'FullUpdate';
+  clientDisconnected(flags: CallReducerFlags) {
+    this.clientDisconnectedFlags = flags;
+  }
+
   createGameFlags: CallReducerFlags = 'FullUpdate';
   createGame(flags: CallReducerFlags) {
     this.createGameFlags = flags;
@@ -288,6 +325,11 @@ export class SetReducerFlags {
   placeStoneFlags: CallReducerFlags = 'FullUpdate';
   placeStone(flags: CallReducerFlags) {
     this.placeStoneFlags = flags;
+  }
+
+  seedFlags: CallReducerFlags = 'FullUpdate';
+  seed(flags: CallReducerFlags) {
+    this.seedFlags = flags;
   }
 
   sendMessageFlags: CallReducerFlags = 'FullUpdate';

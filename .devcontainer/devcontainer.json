@@ -13,7 +13,7 @@
   // "forwardPorts": [],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "npm i && spacetime version upgrade && spacetime version list",
+  "postCreateCommand": "cd client && npm i &&  spacetime version upgrade && spacetime version list",
 
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},

@@ -4,16 +4,13 @@
   "description": "Game to demo spacetimedb",
   "main": "index.js",
   "scripts": {
-    "db-up": "docker-compose up -d",
-    "dev": "npm-run-all --parallel dev:*",
-    "dev:db": "spacetime start",
-    "dev:ui": "cd client && npm run dev",
-    "db-start": "spacetime start",
-    "generate": "npm run spacetime -- generate --lang typescript --out-dir client/src/module_bindings --project-path server -y",
-    "publish": "npm run spacetime -- publish  --project-path server --delete-data quickstart-chat -y",
+    "dev": "cd client && npm run dev &",
     "test": "docker exec -w /app/server spacetime  cargo test",
-    "seed": "npm run spacetime -- call quickstart-chat seed",
-    "logs": "npm run spacetime -- logs quickstart-chat -f"
+    "db:start": "spacetime start",
+    "db:generate": "spacetime generate --lang typescript --out-dir client/src/module_bindings --project-path server -y",
+    "db:publish": "spacetime publish  --project-path server --delete-data quickstart-chat -y",
+    "db:seed": "spacetime call quickstart-chat seed",
+    "db:logs": "spacetime logs quickstart-chat -f"
   },
   "author": "",
   "license": "ISC",

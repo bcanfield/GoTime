@@ -33,6 +33,14 @@ npm run db:publish
 
 # Start the UI
 npm run client:dev
+
+##### Optional
+
+# To see the SpacetimeDB logs:
+npm run db:logs
+
+# To re-generate the Typescript bindings
+npm run generate
 ```
 
 ---
@@ -60,38 +68,6 @@ If you prefer to develop locally, make sure you have:
 - Rust (latest stable)
 - SpacetimeDB CLI
 
-### Development Workflow
-
-#### 1. Start SpacetimeDB
-```bash
-npm run db:start
-```
-
-#### 2. Publish the module
-```bash
-npm run db:publish
-```
-
-#### 3. Start the UI
-```bash
-npm run dev
-```
-
-#### Generate TypeScript Bindings
-
-After making changes to the Rust backend, regenerate the TypeScript bindings:
-
-```bash
-npm run generate
-```
-
-#### View Logs
-
-To see the SpacetimeDB logs:
-
-```bash
-npm run db:logs
-```
 
 ## 🤝 Contributing
 

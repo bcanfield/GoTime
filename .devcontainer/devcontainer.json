@@ -12,20 +12,18 @@
   "portsAttributes": {
     "3000": {
       "label": "Backend API",
-      "onAutoForward": "notify"  // This helps you know the dynamic URL has been assigned
+      "onAutoForward": "notify" // This helps you know the dynamic URL has been assigned
     },
     "5173": {
       "label": "UI",
-      "onAutoForward": "notify"  // This helps you know the dynamic URL has been assigned
-
+      "onAutoForward": "notify" // This helps you know the dynamic URL has been assigned
     }
   },
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "cd client && npm i &&  spacetime version upgrade && spacetime version list && npm run publish",
-  
+  "postCreateCommand": "cd client && npm i &&  spacetime version upgrade && spacetime version list && npm run publish && npm run dev"
 
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},

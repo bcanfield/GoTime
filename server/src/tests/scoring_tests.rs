@@ -50,18 +50,39 @@ fn test_remove_dead_stones() {
         }
     }
     let mut board = create_board_from_vec(vec, board_size);
-    // The black group should have no liberties.
+    
+    // Debug: Print all groups and their liberties
     let groups = find_groups(&board);
+    println!("Number of groups found: {}", groups.len());
+    for (i, group) in groups.iter().enumerate() {
+        println!("Group {}: color = {:?}, stones = {}, liberties = {}", 
+                 i, group.occupant, group.stones.len(), group.liberties.len());
+        println!("  Stones: {:?}", group.stones);
+        println!("  Liberties: {:?}", group.liberties);
+    }
+    
+    // The black group should have no liberties.
     let black_group = groups
-        .into_iter()
+        .iter()
         .find(|g| g.occupant == Occupant::Black)
         .unwrap();
     assert!(black_group.liberties.is_empty());
+    
     // Remove dead stones.
     let removed_groups = remove_dead_stones(&mut board);
+    
+    // Debug: Print removed groups
+    println!("Number of removed groups: {}", removed_groups.len());
+    for (i, group) in removed_groups.iter().enumerate() {
+        println!("Removed group {}: color = {:?}, stones = {}", 
+                 i, group.occupant, group.stones.len());
+        println!("  Stones: {:?}", group.stones);
+    }
+    
     // Check that the black stone was removed.
     assert_eq!(board.get(1, 1).unwrap().occupant, Occupant::Empty);
     assert_eq!(board.get(1, 1).unwrap().marker.as_deref(), Some("removed"));
+    
     // Also, removed_groups should contain one group.
     assert_eq!(removed_groups.len(), 1);
 }

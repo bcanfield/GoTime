@@ -25,6 +25,8 @@ jobs:
             npm run db:start &
             # Wait for SpacetimeDB to start
             sleep 10
+            # Publish module to SpacetimeDB
+            npm run db:publish
             # Run tests and ensure the exit code is captured
             npm run test
             TEST_EXIT_CODE=$?

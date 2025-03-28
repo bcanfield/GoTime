@@ -137,7 +137,7 @@ pub fn remove_group(board: &mut [SpotState], group: &HashSet<usize>) {
 /// It handles:
 /// - Placing a stone
 /// - Capturing opponent groups with no liberties
-/// - Checking for suicide moves (illegal)
+/// - Checking for self_capture moves (illegal)
 /// - Checking for ko rule violations (illegal)
 ///
 /// # Arguments
@@ -164,6 +164,8 @@ pub fn apply_move_to_board(
     let mut board = board;
     let idx = coord_to_index(x, y, size);
     
+    // Print occupant for debugging
+    println!("Occupant at index {}: {:?}", idx, board[idx].occupant);
     // Check if the position is already occupied
     if board[idx].occupant != Occupant::Empty {
         return Err("Position already occupied".to_string());
@@ -195,7 +197,7 @@ pub fn apply_move_to_board(
         }
     }
     
-    // Check for suicide moves (unless we captured something)
+    // Check for self_capture moves (unless we captured something)
     if !captured_something {
         let group = get_group_indices(&board, size, x, y);
         
@@ -204,7 +206,7 @@ pub fn apply_move_to_board(
             board[idx].occupant = Occupant::Empty;
             board[idx].move_number = None;
             
-            return Err("Illegal move: suicide".to_string());
+            return Err("Illegal move: self_capture".to_string());
         }
     }
     
@@ -215,14 +217,78 @@ pub fn apply_move_to_board(
     };
     
     // Check for ko rule violation
-    if let Some(prev) = &previous_board {
-        if new_board_str == *prev {
-            // Undo the move
-            board[idx].occupant = Occupant::Empty;
-            board[idx].move_number = None;
+    // if let Some(prev) = &previous_board {
+    //     if new_board_str == *prev {
+    //         // Log the ko rule violation
+    //         println!("Ko rule violation detected: new board state matches previous board state");
             
+            // // Undo the move
+            // board[idx].occupant = Occupant::Empty;
+            // board[idx].move_number = None;
+            
+    //         return Err("Illegal move: violates ko rule".to_string());
+    //     } else {
+    //         // Log the new board state
+    //         println!("No vialoation detected: new board state does not match previous board state");
+    //     }
+    // }
+    if let Some(prev) = &previous_board {
+        // Deserialize the previous board state
+        let prev_board: Vec<SpotState> = serde_json::from_str(prev)
+            .map_err(|e| format!("Failed to deserialize previous board state: {}", e))?;
+        
+        // Extract only the occupant values by cloning each one
+        let current_occupants: Vec<Occupant> = board.iter().map(|spot| spot.occupant.clone()).collect();
+        let previous_occupants: Vec<Occupant> = prev_board.iter().map(|spot| spot.occupant.clone()).collect();
+        
+        // Compare the occupant vectors
+        if current_occupants == previous_occupants {
+            println!("Ko rule violation: occupant configurations are identical.");
+                        // Undo the move
+                        board[idx].occupant = Occupant::Empty;
+                        board[idx].move_number = None;
             return Err("Illegal move: violates ko rule".to_string());
         }
+    }
+    
+    // Log the board state for debugging
+    for y in 0..size {
+        let mut row_str = String::new();
+        for x in 0..size {
+            let idx = coord_to_index(x, y, size);
+            let stone = match board[idx].occupant {
+                Occupant::Black => "B",
+                Occupant::White => "W",
+                Occupant::Empty => ".",
+            };
+            row_str.push_str(stone);
+        }
+        println!("New {}", row_str);
+    }
+
+    // log the previous board state
+    if let Some(prev) = &previous_board {
+        // we need to convert the previous board string to a Vec<SpotState>
+        let prev_board: Vec<SpotState> = serde_json::from_str(prev).unwrap_or_else(|e| {
+            panic!("Failed to deserialize previous board state: {}", e)
+        });
+        // Print the previous board state
+        for y in 0..size {
+            let mut row_str = String::new();
+            for x in 0..size {
+                let idx = coord_to_index(x, y, size);
+                let stone = match prev_board[idx].occupant {
+                    Occupant::Black => "B",
+                    Occupant::White => "W",
+                    Occupant::Empty => ".",
+                };
+                row_str.push_str(stone);
+            }
+            println!("Previous {}", row_str);
+        }
+        // println!("Previous board state: {}", prev);
+    } else {
+        println!("No previous board state provided");
     }
     
     Ok((board, Some(new_board_str)))

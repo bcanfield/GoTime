@@ -3,6 +3,7 @@
 # GoTime
   
   [![tests](https://img.shields.io/github/actions/workflow/status/bcanfield/GoTime/test.yml?label=tests&logo=saturn)](https://github.com/bcanfield/GoTime/actions/workflows/test.yml)
+  [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 
 **GoTime** is a multiplayer [Go](https://en.wikipedia.org/wiki/Go_(game)) game built with [SpacetimeDB](https://spacetimedb.com/).
@@ -10,6 +11,7 @@
 <p align="left">
   <a href="https://codespaces.new/bcanfield/GoTime"><img src="https://img.shields.io/badge/Open%20in-Github%20Codespaces-blue?style=flat-square&logo=github" alt="Open in Github Codespaces"></a>
   <a href="https://codesandbox.io/p/github/bcanfield/GoTime/main"><img src="https://img.shields.io/badge/Open%20in-CodeSandbox-blue?style=flat-square&logo=codesandbox" alt="Open in CodeSandbox"></a>
+  <a href="https://vscode.dev/github/bcanfield/GoTime"><img src="https://img.shields.io/badge/Open%20in-VS%20Code-blue?style=flat-square&logo=visualstudiocode" alt="Open in VS Code"></a>
 </p>
 
 ## ✨ Features

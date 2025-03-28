@@ -21,10 +21,14 @@ jobs:
         with:
           push: never
           runCmd: |
-            npm run db:start
+            # Start SpacetimeDB in the background
+            npm run db:start &
             # Wait for SpacetimeDB to start
-            sleep 5
-            # Publish our module
-            npm run db:publish
-            # Run the tests
+            sleep 10
+            # Run tests and ensure the exit code is captured
             npm run test
+            TEST_EXIT_CODE=$?
+            # Kill all spacetime processes to ensure we clean up
+            pkill -f spacetime || true
+            # Exit with the test exit code
+            exit $TEST_EXIT_CODE

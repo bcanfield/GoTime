@@ -21,16 +21,22 @@ jobs:
         with:
           push: never
           runCmd: |
-            # Start SpacetimeDB in the background
+            # Start SpacetimeDB in the background and capture its PID
             npm run db:start &
+            DB_PID=$!
+            
+            # Ensure the background process is terminated on script exit
+            trap "kill $DB_PID" SIGINT SIGTERM EXIT
+            
             # Wait for SpacetimeDB to start
             sleep 10
+            
             # Publish module to SpacetimeDB
             npm run db:publish
-            # Run tests and ensure the exit code is captured
+            
+            # Run tests and capture the exit code
             npm run test
             TEST_EXIT_CODE=$?
-            # Kill all spacetime processes to ensure we clean up
-            pkill -f spacetime || true
-            # Exit with the test exit code
+            
+            # Exit with the test command's exit code
             exit $TEST_EXIT_CODE

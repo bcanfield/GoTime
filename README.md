@@ -1,88 +1,105 @@
-<img src="client/public/go.svg" width="100" height="100"/>
-
+<img src="client/public/go.svg" width="100" height="100" alt="GoTime Logo"/>
 
 # GoTime
- 
-⚠️⚠️ README & Public demo in progress ⚠️⚠️
 
+**GoTime** is a multiplayer [Go](https://en.wikipedia.org/wiki/Go_(game)) game built with [SpacetimeDB](https://spacetimedb.com/).
 
+<p align="center">
+  <a href="https://codespaces.new/bcanfield/GoTime"><img src="https://img.shields.io/badge/Open%20in-Github%20Codespaces-blue?style=flat-square&logo=github" alt="Open in Github Codespaces"></a>
+  <a href="https://codesandbox.io/p/github/bcanfield/GoTime/main"><img src="https://img.shields.io/badge/Open%20in-CodeSandbox-blue?style=flat-square&logo=codesandbox" alt="Open in CodeSandbox"></a>
+</p>
 
+## ✨ Features
 
+- **Fast Multiplayer**: Built with SpacetimeDB for rapid state updates and low-latency interactions
+- **Real-Time Game Analysis**: Dynamic board analysis, scoring (both area & territory methods), and move legality checks
+- **Modern Tech Stack**: React frontend and Rust backend
 
-**GoTime** is a proof-of-concept multiplayer game of [Go](https://en.wikipedia.org/wiki/Go_(game)) built using [SpacetimeDB](https://spacetimedb.com/).
+## 🚀 Quick Start
 
-Thie repository contains a client app written in [React](https://react.dev/) and a server app written in [Rust](https://www.rust-lang.org/).
+```bash
+# Clone the repository
+git clone https://github.com/bcanfield/GoTime.git
+cd GoTime
+
+# Install dependencies
+npm install
+
+# Start SpacetimeDB
+npm run db:start
+
+# Publish the module to SpacetimeDB
+npm run db:publish
+
+# Start the UI
+npm run client:dev
+```
 
 ---
 
-## Quick Overview
+## 📖 About the Game
 
-- **Fast Multiplayer**  
-  Built with SpacetimeDB for rapid state updates and low-latency interactions.
+GoTime is a proof-of-concept implementation of the ancient board game Go. It demonstrates how SpacetimeDB can be used to create responsive multiplayer experiences with complex game logic.
 
-- **Real-Time Game Analysis:**  
-  Dynamic board analysis, scoring (area & territory methods), move legality checks, etc are performed on every move.
+The repository contains:
+- A client app written in [React](https://react.dev/)  
+- A server app written in [Rust](https://www.rust-lang.org/)
 
-- **Game Rules:**  
-  Our Game rules write-up can be found at [GO_RULES.md](/GO_RULES.md)
+For the rules of Go, see our [GO_RULES.md](/GO_RULES.md) document or visit one of the many excellent online resources for learning the game.
 
-  For complete instructions on how to play Go, we recommend going to one of the more official sources online.
+## 🛠️ Development Guide
 
+### Dev Container Support
 
----
+This project uses a dev container for a consistent development environment with Rust, Node.js, and the SpacetimeDB CLI pre-installed. Open the project in GitHub Codespaces or CodeSandbox using the badges above.
 
-## Development
+### Manual Setup
 
+If you prefer to develop locally, make sure you have:
+- Node.js (v16+)
+- Rust (latest stable)
+- SpacetimeDB CLI
 
-### Starting the Database
+### Development Workflow
 
-To start the database, run:
-
+#### 1. Start SpacetimeDB
 ```bash
-npm run db-up
+npm run db:start
 ```
 
-## Using the Spacetime CLI via Docker
-
-### Creating a Module
-
-To create a new module using Rust:
-
+#### 2. Publish the module
 ```bash
-npm run spacetime -- init --lang rust test-module
+npm run db:publish
 ```
 
-### Publishing a Module
-
-This pushes your module to the running spacetimedb
-
+#### 3. Start the UI
 ```bash
-npm run spacetime -- publish --project-path server quickstart-chat
+npm run dev
 ```
 
-## Generating Typescript Types
+#### Generate TypeScript Bindings
 
-Generate the backend types into the directory `client/src/module_bindings`:
+After making changes to the Rust backend, regenerate the TypeScript bindings:
 
 ```bash
 npm run generate
 ```
 
-### Calling a Reducer
+#### View Logs
 
-To call a reducer (e.g., sending a message):
-
-```bash
-npm run spacetime -- call quickstart-chat send_message 'Hello, World!'
-```
-
-### Viewing Logs
-
-To view logs and verify that the reducer was called:
+To see the SpacetimeDB logs:
 
 ```bash
-npm run spacetime -- logs quickstart-chat
+npm run db:logs
 ```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+This project is open source and available under the [MIT License](LICENSE).
 
 
 

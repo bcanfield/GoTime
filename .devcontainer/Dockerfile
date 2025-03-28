@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/typescript-node:bookworm
+FROM mcr.microsoft.com/devcontainers/typescript-node:dev-22-bookworm@sha256:59a0fe0a36eeeeaecf132f27bb8564ad6eb57e79f0b99c1ab9a0fa653a7f9ea7
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \

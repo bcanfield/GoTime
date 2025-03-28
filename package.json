@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "db-up": "docker-compose up -d",
-    "dev": "cd client && npm run dev",
+    "dev": "npm-run-all --parallel dev:*",
+    "dev:db": "spacetime start",
+    "dev:ui": "cd client && npm run dev",
     "db-start": "spacetime start",
-    "spacetime": "spacetime",
     "generate": "npm run spacetime -- generate --lang typescript --out-dir client/src/module_bindings --project-path server -y",
     "publish": "npm run spacetime -- publish  --project-path server --delete-data quickstart-chat -y",
     "test": "docker exec -w /app/server spacetime  cargo test",
@@ -15,5 +16,8 @@
     "logs": "npm run spacetime -- logs quickstart-chat -f"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "npm-run-all": "^4.1.5"
+  }
 }

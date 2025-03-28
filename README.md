@@ -1,10 +1,13 @@
 <img src="client/public/go.svg" width="100" height="100" alt="GoTime Logo"/>
 
 # GoTime
+  
+  [![tests](https://img.shields.io/github/actions/workflow/status/bcanfield/GoTime/test.yml?label=tests&logo=saturn)](https://github.com/bcanfield/GoTime/actions/workflows/test.yml)
+
 
 **GoTime** is a multiplayer [Go](https://en.wikipedia.org/wiki/Go_(game)) game built with [SpacetimeDB](https://spacetimedb.com/).
 
-<p align="center">
+<p align="left">
   <a href="https://codespaces.new/bcanfield/GoTime"><img src="https://img.shields.io/badge/Open%20in-Github%20Codespaces-blue?style=flat-square&logo=github" alt="Open in Github Codespaces"></a>
   <a href="https://codesandbox.io/p/github/bcanfield/GoTime/main"><img src="https://img.shields.io/badge/Open%20in-CodeSandbox-blue?style=flat-square&logo=codesandbox" alt="Open in CodeSandbox"></a>
 </p>

@@ -1,12 +1,17 @@
-FROM mcr.microsoft.com/devcontainers/typescript-node:dev-22-bookworm@sha256:59a0fe0a36eeeeaecf132f27bb8564ad6eb57e79f0b99c1ab9a0fa653a7f9ea7
+FROM rust:bookworm
 
-# Install dependencies
+# Install system dependencies and Node.js
 RUN apt-get update && apt-get install -y \
       curl \
       ca-certificates \
       binaryen \
       build-essential \
       && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (example using Node 18)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get update && apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install SpacetimeDB as root to ensure proper permissions
 USER root
@@ -20,18 +25,17 @@ RUN mkdir -p /usr/local/bin && \
     cp /root/.local/bin/spacetime /usr/local/bin/ && \
     chmod +x /usr/local/bin/spacetime
 
-# Switch to the default non-root user
+# Create a non-root user 'node' and switch to it
+RUN useradd -ms /bin/bash node
 USER node
 
-# Install Rust using rustup as the non-root user
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# (Optional) Update PATH for Cargo binaries if needed
+# The official rust image installs rustup; the cargo bin may be in /usr/local/cargo/bin.
+# Adjust the PATH below if you use per-user installations.
+ENV PATH="/usr/local/cargo/bin:${PATH}"
 
-# Update PATH to include Cargo binaries
-ENV PATH="/home/node/.cargo/bin:${PATH}"
-
-# Use Cargo (via rustup-installed Rust) to install an example package
-# RUN cargo install cargo-audit
+# Add the wasm target for Rust
 RUN rustup target add wasm32-unknown-unknown
 
-# Ensure PATH includes the SpacetimeDB executable location for interactive shells
+# Ensure the SpacetimeDB binary remains in the PATH for interactive shells
 RUN echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc

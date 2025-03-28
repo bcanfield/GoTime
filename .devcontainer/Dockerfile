@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
       binaryen \
       build-essential \
       wget \
+      git \
       gnupg \
       lsb-release \
       && rm -rf /var/lib/apt/lists/*

@@ -191,7 +191,7 @@ impl Board {
     ///
     /// This simulates placing a stone and applies all Go rules:
     /// - Cannot place on an occupied spot
-    /// - Cannot commit suicide (unless it captures enemy stones)
+    /// - Cannot commit self_capture (unless it captures enemy stones)
     ///
     /// Note: This function does not check for ko rule violations
     /// since that requires previous board state.

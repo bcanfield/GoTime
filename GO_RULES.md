@@ -34,7 +34,7 @@ Our system is designed to closely follow the official rules of Go while providin
 - **Ko Rule:**  
   A move that would recreate a previous board state is forbidden to prevent endless capture-and-recapture cycles (known as "ko fights").
 
-- **Suicide Rule:**  
+- **self_capture Rule:**  
   A stone cannot be played if it would result in its own group having no liberties, unless it simultaneously captures enemy stones.
 
 - **Playability:**  
@@ -70,7 +70,7 @@ Our backend enriches the board state with detailed annotations, so the client UI
   Each empty spot is annotated with which player (if any) “owns” the point and a textual explanation (e.g., "Cell enclosed by Black" or "Neutral").
   
 - **Playability Information:**  
-  Each spot includes a flag indicating whether a move can be legally played there. This is determined by simulating moves at every empty cell and checking for violations of the rules (e.g., suicide or ko).
+  Each spot includes a flag indicating whether a move can be legally played there. This is determined by simulating moves at every empty cell and checking for violations of the rules (e.g., self_capture or ko).
 
 The annotated board is returned to the client so that the UI can visually disable unplayable spots and display scoring insights in real time.
 

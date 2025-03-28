@@ -10,4 +10,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    host: true, // Listen on all addresses, including LAN
+    port: 5173, // Ensure this matches the forwarded port
+  },
 });

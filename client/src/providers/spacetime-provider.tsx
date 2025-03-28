@@ -162,10 +162,15 @@ export const SpacetimeProvider: React.FC<{ children: React.ReactNode }> = ({
     const onConnectError = (_ctx: ErrorContext, err: Error) => {
       console.error("Connection error:", err);
     };
-
+    console.log({ brandin: import.meta.env.VITE_CODESPACE_NAME });
+    console.log({ brandin2: import.meta.env.VITE_SPACETIMEDB_URL });
+console.log(import.meta.env.BASE_URL)
+    
+const v = import.meta.env
+console.log({v})
     // Build the connection
     const connection = DbConnection.builder()
-      .withUri("ws://localhost:3000")
+      .withUri(import.meta.env.VITE_SPACETIMEDB_URL)
       .withModuleName("quickstart-chat")
       .withToken(localStorage.getItem("auth_token") || "")
       .onConnect(onConnect)
